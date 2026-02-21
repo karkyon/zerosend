@@ -1,0 +1,21 @@
+# 環境変数（機密情報）
+.env
+
+# Node.js
+node_modules/
+dist/
+
+# Prisma
+prisma/migrations/*.sql.bak
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.vscode/settings.json
+
+# Docker
+docker/postgres/data/
+
+# Logs
+*.log
+logs/

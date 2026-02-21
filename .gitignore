@@ -1,21 +1,35 @@
-# 環境変数（機密情報）
-.env
+# =====================================
+# zerosend/.gitignore — モノレポルート
+# =====================================
 
-# Node.js
+# 環境変数（絶対にコミットしない）
+.env
+backend/.env
+
+# 依存パッケージ
 node_modules/
-dist/
+backend/node_modules/
+frontend/node_modules/
+
+# ビルド成果物
+backend/dist/
+frontend/dist/
+frontend/.next/
+frontend/build/
 
 # Prisma
-prisma/migrations/*.sql.bak
+backend/prisma/migrations/
 
-# OS / Editor
+# OS・エディタ
 .DS_Store
 Thumbs.db
 .vscode/settings.json
+*.swp
+*.swo
+
+# ログ
+*.log
+npm-debug.log*
 
 # Docker
 docker/postgres/data/
-
-# Logs
-*.log
-logs/

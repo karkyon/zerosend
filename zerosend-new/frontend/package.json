@@ -1,0 +1,17 @@
+{
+  "name": "@zerosend/frontend",
+  "version": "0.1.0",
+  "description": "ZeroSend — Frontend Web Application (TBD)",
+  "private": true,
+  "scripts": {
+    "dev":   "echo 'frontend: TBD'",
+    "build": "echo 'frontend: TBD'"
+  },
+  "dependencies": {},
+  "devDependencies": {},
+  "_comment": [
+    "フロントエンドフレームワーク・ビルドツールは設計書策定後に追加予定。",
+    "候補: Next.js / Vite+React / SvelteKit など。",
+    "Kyber-768 鍵生成・AES-256-GCM 暗号化は全てクライアント側で実行する。"
+  ]
+}

@@ -1,5 +1,5 @@
 // =====================================
-// ファイルパス  : zerosend/src/routes/auth.route.ts
+// ファイルパス  : zerosend/backend/src/routes/auth.route.ts
 //
 // 説明・目的・機能概要:
 //   認証エンドポイントコントローラ。
@@ -16,11 +16,40 @@
 
 import { Hono } from 'hono'
 import { login, verifyTotp } from '../services/auth.service.js'
+import { register }          from '../services/register.service.js'
 import { loginSchema, verifyTotpSchema } from '../validators/auth.validator.js'
-import { BadRequestError } from '../types/errors.js'
-import type { AppEnv } from '../types/index.js'
+import { registerSchema }    from '../validators/register.validator.js'
+import { BadRequestError }   from '../types/errors.js'
+import type { AppEnv }       from '../types/index.js'
 
 export const authRoute = new Hono<AppEnv>()
+
+// ─── POST /api/v1/auth/register ──────────────────────────────────────────────
+
+authRoute.post('/register', async (c) => {
+  const raw    = await c.req.json().catch(() => null)
+  const result = registerSchema.safeParse(raw)
+
+  if (!result.success) {
+    throw new BadRequestError(result.error.issues.map((i: {message: string}) => i.message).join(', '))
+  }
+
+  const { email, display_name, password, public_key_b64, key_type, totp_secret_enc } = result.data
+
+  const reg = await register({
+    email,
+    displayName:   display_name,
+    password,
+    publicKeyB64:  public_key_b64,
+    keyType:       key_type,
+    totpSecretEnc: totp_secret_enc ?? undefined,
+  })
+
+  return c.json({
+    user_id:         reg.userId,
+    key_fingerprint: reg.keyFingerprint,
+  }, 201)
+})
 
 // ─── POST /api/v1/auth/login ─────────────────────────────────────────────────
 
@@ -29,7 +58,7 @@ authRoute.post('/login', async (c) => {
   const result = loginSchema.safeParse(raw)
 
   if (!result.success) {
-    throw new BadRequestError(result.error.issues.map(i => i.message).join(', '))
+    throw new BadRequestError(result.error.issues.map((i: {message: string}) => i.message).join(', '))
   }
 
   const { email, password } = result.data
@@ -56,7 +85,7 @@ authRoute.post('/totp/verify', async (c) => {
   const result = verifyTotpSchema.safeParse(raw)
 
   if (!result.success) {
-    throw new BadRequestError(result.error.issues.map(i => i.message).join(', '))
+    throw new BadRequestError(result.error.issues.map((i: {message: string}) => i.message).join(', '))
   }
 
   const { url_token, email, otp } = result.data

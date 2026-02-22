@@ -68,3 +68,8 @@ export class CloudStorageError extends AppError {
 export class ForbiddenError extends AppError {
   constructor(d?: string) { super('forbidden', 'Forbidden', d) }
 }
+
+// レートリミット
+export class TooManyRequestsError extends AppError {
+  constructor(d?: string) { super('rate-limited', 'Too Many Requests', d) }
+}

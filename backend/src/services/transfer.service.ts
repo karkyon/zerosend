@@ -344,8 +344,8 @@ async function writeAuditLog(input: AuditLogInput): Promise<void> {
         actorId:   input.actorId,
         eventType: input.eventType as any,
         result:    input.result    as any,
-        ipAddress: input.ipAddress,
-        metadata:  input.metadata ?? null,
+        ipAddress: input.ipAddress ?? '',
+        metadata:  input.metadata as import('@prisma/client').Prisma.InputJsonValue ?? undefined,
       },
     })
   } catch (err) {

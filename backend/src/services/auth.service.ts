@@ -265,7 +265,7 @@ export async function verifyTotp(input: VerifyTotpInput): Promise<VerifyTotpResu
     sessionId:     session.id,
     eventType:     'auth_success',
     result:        'success',
-    ipAddress:     input.ipAddress,
+    ipAddress:     input.ipAddress ?? '',
     userAgentHash: input.userAgent ? hashEmail(input.userAgent) : undefined,
     metadata:      { method: 'totp' },
   })
@@ -304,7 +304,7 @@ async function handleTotpFailure(
     actorId:       userId,
     eventType:     'auth_fail',
     result:        'failure',
-    ipAddress:     input.ipAddress,
+    ipAddress:     input.ipAddress ?? '',
     userAgentHash: input.userAgent ? hashEmail(input.userAgent) : undefined,
     metadata:      { urlToken, failCount: count, method: 'totp' },
   })
@@ -347,9 +347,9 @@ async function writeAuditLog(input: AuditLogInput): Promise<void> {
         actorId:       input.actorId,
         eventType:     input.eventType as any,
         result:        input.result as any,
-        ipAddress:     input.ipAddress,
+        ipAddress:     input.ipAddress ?? '',
         userAgentHash: input.userAgentHash,
-        metadata:      input.metadata ?? null,
+        metadata:      input.metadata as import('@prisma/client').Prisma.InputJsonValue ?? undefined,
       },
     })
   } catch (err) {

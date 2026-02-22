@@ -1,0 +1,48 @@
+{
+  "name": "@zerosend/backend",
+  "version": "0.1.0",
+  "description": "ZeroSend — Quantum-resistant zero-retention file transfer API",
+  "type": "module",
+  "main": "dist/app.js",
+  "scripts": {
+    "dev": "tsx watch src/app.ts",
+    "build": "tsc",
+    "start": "node dist/app.js",
+    "db:migrate": "prisma migrate dev --config prisma.config.ts",
+    "db:generate": "prisma generate --config prisma.config.ts",
+    "db:studio": "prisma studio --config prisma.config.ts",
+    "lint": "eslint src --ext .ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.13.7",
+    "@hono/swagger-ui": "^0.4.1",
+    "@prisma/adapter-pg": "^7.4.1",
+    "@prisma/client": "^7.0.0",
+    "bcryptjs": "^2.4.3",
+    "hono": "^4.7.0",
+    "ioredis": "^5.4.2",
+    "jsonwebtoken": "^9.0.2",
+    "nodemailer": "^6.9.16",
+    "otplib": "^12.0.1",
+    "pg": "^8.18.0",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.8",
+    "@types/node": "^22.10.0",
+    "@types/nodemailer": "^6.4.17",
+    "@types/pg": "^8.16.0",
+    "prisma": "^7.0.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@prisma/engines",
+      "esbuild",
+      "prisma"
+    ]
+  }
+}

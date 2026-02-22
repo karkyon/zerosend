@@ -1,36 +1,24 @@
-// ============================================================
-//  ZeroSend — Prisma Schema (camelCase edition)
-//  ファイル: prisma/schema.camel.prisma
-//
-//  設計規約:
-//    - Prisma / TypeScript 側: camelCase フィールド名
-//    - DB カラム: snake_case (@map で明示マッピング)
-//    - Enum 複合語: camelCase + @map("snake_case")
-//    - datasource url: prisma.config.ts で管理 (Prisma 7.x)
-//    - @db.Int8 は Prisma 7.x 非対応のため使用しない
-// ============================================================
-
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
   previewFeatures = ["driverAdapters"]
-  output     = "../node_modules/.prisma/client"
+  output          = "../node_modules/.prisma/client"
 }
 
 datasource db {
   provider = "postgresql"
-  // url は prisma.config.ts で指定
 }
-
-// ── Enums ────────────────────────────────────────────────────────
 
 enum UserRole {
   user
   admin
+  @@map("user_role")
 }
 
 enum KeyType {
   kyber768
   x25519
+  fido2
+  @@map("key_type")
 }
 
 enum CloudType {
@@ -39,6 +27,7 @@ enum CloudType {
   onedrive
   dropbox
   server
+  @@map("cloud_type")
 }
 
 enum SessionStatus {
@@ -47,33 +36,37 @@ enum SessionStatus {
   downloaded
   deleted
   expired
+  @@map("session_status")
 }
 
 enum AuditEventType {
-  urlIssued    @map("url_issued")
+  url_issued
   access
-  authSuccess  @map("auth_success")
-  authFail     @map("auth_fail")
-  dlSuccess    @map("dl_success")
-  dlFail       @map("dl_fail")
+  auth_success
+  auth_fail
+  dl_success
+  dl_fail
   deleted
-  adminDelete  @map("admin_delete")
+  admin_delete
   lock
   unlock
+  @@map("audit_event_type")
 }
 
 enum AuditResult {
   success
   failure
+  @@map("audit_result")
 }
 
 enum WebhookEvent {
-  transferCreated     @map("transfer_created")
-  transferDownloaded  @map("transfer_downloaded")
-  transferExpired     @map("transfer_expired")
-  transferDeleted     @map("transfer_deleted")
-  authFailed          @map("auth_failed")
-  authLocked          @map("auth_locked")
+  transfer_created
+  transfer_downloaded
+  transfer_expired
+  transfer_deleted
+  auth_failed
+  auth_locked
+  @@map("webhook_event")
 }
 
 enum WebhookDeliveryStatus {
@@ -81,95 +74,87 @@ enum WebhookDeliveryStatus {
   success
   failed
   retrying
+  @@map("webhook_delivery_status")
 }
-
-// ── Model: users ─────────────────────────────────────────────────
 
 model User {
   id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   email             String    @unique @db.VarChar(255)
-  emailHash         String    @unique @db.Char(64)             @map("email_hash")
-  displayName       String    @db.VarChar(100)                 @map("display_name")
+  emailHash         String    @unique @db.Char(64)            @map("email_hash")
+  displayName       String    @db.VarChar(100)                @map("display_name")
   role              UserRole  @default(user)
-  passwordHash      String    @db.VarChar(72)                  @map("password_hash")
-  totpSecretEnc     String?   @db.Text                         @map("totp_secret_enc")
-  fido2CredentialId String?   @db.Text                         @map("fido2_credential_id")
-  isActive          Boolean   @default(true)                   @map("is_active")
-  createdAt         DateTime  @default(now()) @db.Timestamptz  @map("created_at")
-  updatedAt         DateTime  @updatedAt      @db.Timestamptz  @map("updated_at")
-  lastLoginAt       DateTime? @db.Timestamptz                  @map("last_login_at")
+  passwordHash      String    @db.VarChar(72)                 @map("password_hash")
+  totpSecretEnc     String?   @db.Text                        @map("totp_secret_enc")
+  fido2CredentialId String?   @db.Text                        @map("fido2_credential_id")
+  isActive          Boolean   @default(true)                  @map("is_active")
+  createdAt         DateTime  @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt         DateTime  @updatedAt      @db.Timestamptz @map("updated_at")
+  lastLoginAt       DateTime? @db.Timestamptz                 @map("last_login_at")
 
   publicKeys     UserPublicKey[]
-  sentSessions   TransferSession[] @relation("SenderSessions")
-  auditLogs      AuditLog[]        @relation("ActorLogs")
+  sentSessions   TransferSession[] @relation("sender_sessions")
+  auditLogs      AuditLog[]        @relation("actor_logs")
   webhookConfigs WebhookConfig[]
 
-  @@index([emailHash])
-  @@index([isActive, role])
+  @@index([emailHash],      name: "idx_users_email_hash")
+  @@index([isActive, role], name: "idx_users_active_role")
   @@map("users")
 }
 
-// ── Model: user_public_keys ──────────────────────────────────────
-
 model UserPublicKey {
   id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId       String    @db.Uuid            @map("user_id")
-  keyType      KeyType   @default(kyber768)   @map("key_type")
-  publicKeyB64 String    @db.Text             @map("public_key_b64")
+  userId       String    @db.Uuid           @map("user_id")
+  keyType      KeyType   @default(kyber768) @map("key_type")
+  publicKeyB64 String    @db.Text           @map("public_key_b64")
   fingerprint  String    @unique @db.Char(64)
-  isPrimary    Boolean   @default(false)      @map("is_primary")
-  isRevoked    Boolean   @default(false)      @map("is_revoked")
-  expiresAt    DateTime? @db.Timestamptz      @map("expires_at")
+  isPrimary    Boolean   @default(false)    @map("is_primary")
+  isRevoked    Boolean   @default(false)    @map("is_revoked")
+  expiresAt    DateTime? @db.Timestamptz    @map("expires_at")
   createdAt    DateTime  @default(now()) @db.Timestamptz @map("created_at")
 
   user     User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   sessions TransferSession[]
 
-  @@index([userId, isPrimary, isRevoked])
-  @@index([fingerprint])
+  @@index([userId, isPrimary, isRevoked], name: "idx_upk_user_primary")
+  @@index([fingerprint],                  name: "idx_upk_fingerprint")
   @@map("user_public_keys")
 }
 
-// ── Model: transfer_sessions ─────────────────────────────────────
-
 model TransferSession {
   id                 String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  urlToken           String        @unique @db.VarChar(128)    @map("url_token")
-  senderId           String        @db.Uuid                    @map("sender_id")
-  recipientKeyId     String?       @db.Uuid                    @map("recipient_key_id")
-  recipientEmail     String        @db.VarChar(255)             @map("recipient_email")
-  recipientEmailHash String        @db.Char(64)                @map("recipient_email_hash")
-  fileHashSha3       String        @db.Char(64)                @map("file_hash_sha3")
-  encryptedFilename  String?       @db.Text                    @map("encrypted_filename")
-  fileSizeBytes      BigInt                                     @map("file_size_bytes")
-  cloudType          CloudType                                  @map("cloud_type")
-  cloudFileId        String?       @db.Text                    @map("cloud_file_id")
-  maxDownloads       Int           @default(1) @db.SmallInt    @map("max_downloads")
-  downloadCount      Int           @default(0) @db.SmallInt    @map("download_count")
-  expiresAt          DateTime      @db.Timestamptz             @map("expires_at")
+  urlToken           String        @unique @db.VarChar(128)   @map("url_token")
+  senderId           String        @db.Uuid                   @map("sender_id")
+  recipientKeyId     String?       @db.Uuid                   @map("recipient_key_id")
+  recipientEmail     String        @db.VarChar(255)           @map("recipient_email")
+  recipientEmailHash String        @db.Char(64)               @map("recipient_email_hash")
+  fileHashSha3       String        @db.Char(64)               @map("file_hash_sha3")
+  encryptedFilename  String?       @db.Text                   @map("encrypted_filename")
+  fileSizeBytes      BigInt                                    @map("file_size_bytes")
+  cloudType          CloudType                                 @map("cloud_type")
+  cloudFileId        String?       @db.Text                   @map("cloud_file_id")
+  maxDownloads       Int           @default(1) @db.SmallInt   @map("max_downloads")
+  downloadCount      Int           @default(0) @db.SmallInt   @map("download_count")
+  expiresAt          DateTime      @db.Timestamptz            @map("expires_at")
   status             SessionStatus @default(initiated)
-  keyCacheRef        String?       @db.VarChar(128)            @map("key_cache_ref")
-  isSplitUpload      Boolean       @default(false)             @map("is_split_upload")
+  keyCacheRef        String?       @db.VarChar(128)           @map("key_cache_ref")
+  isSplitUpload      Boolean       @default(false)            @map("is_split_upload")
   createdAt          DateTime      @default(now()) @db.Timestamptz @map("created_at")
   updatedAt          DateTime      @updatedAt      @db.Timestamptz @map("updated_at")
-  downloadedAt       DateTime?     @db.Timestamptz             @map("downloaded_at")
-  deletedAt          DateTime?     @db.Timestamptz             @map("deleted_at")
+  downloadedAt       DateTime?     @db.Timestamptz            @map("downloaded_at")
+  deletedAt          DateTime?     @db.Timestamptz            @map("deleted_at")
 
-  sender       User            @relation("SenderSessions", fields: [senderId], references: [id])
-  recipientKey UserPublicKey?  @relation(fields: [recipientKeyId], references: [id])
+  sender       User            @relation("sender_sessions", fields: [senderId], references: [id])
+  recipientKey UserPublicKey?  @relation(fields: [recipientKeyId], references: [id], onDelete: SetNull)
   auditLogs    AuditLog[]
-  cloudUploads CloudUploadPart[]
+  cloudParts   CloudUploadPart[]
 
-  @@index([urlToken])
-  @@index([senderId, status])
-  @@index([recipientEmailHash])
-  @@index([expiresAt, status])
-  @@index([status, deletedAt])
-  @@index([createdAt])
+  @@index([senderId, status],   name: "idx_ts_sender_status")
+  @@index([recipientEmailHash], name: "idx_ts_recipient_hash")
+  @@index([expiresAt, status],  name: "idx_ts_expires_status")
+  @@index([status, deletedAt],  name: "idx_ts_status_deleted")
+  @@index([createdAt],          name: "idx_ts_created_at")
   @@map("transfer_sessions")
 }
-
-// ── Model: cloud_upload_parts ────────────────────────────────────
 
 model CloudUploadPart {
   id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -180,80 +165,72 @@ model CloudUploadPart {
   cloudFileId  String    @db.Text        @map("cloud_file_id")
   partHashSha3 String    @db.Char(64)    @map("part_hash_sha3")
   uploadedAt   DateTime  @default(now()) @db.Timestamptz @map("uploaded_at")
-  deletedAt    DateTime? @db.Timestamptz  @map("deleted_at")
+  deletedAt    DateTime? @db.Timestamptz @map("deleted_at")
 
   session TransferSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
-  @@unique([sessionId, partIndex])
-  @@index([sessionId])
-  @@index([deletedAt])
+  @@unique([sessionId, partIndex], name: "cup_session_part_uniq")
+  @@index([sessionId],             name: "idx_cup_session")
+  @@index([deletedAt],             name: "idx_cup_deleted")
   @@map("cloud_upload_parts")
 }
 
-// ── Model: audit_logs ────────────────────────────────────────────
-
 model AuditLog {
-  // BigInt のみ使用 — @db.Int8 は Prisma 7.x で非対応
   id            BigInt         @id @default(autoincrement())
-  sessionId     String?        @db.Uuid           @map("session_id")
-  eventType     AuditEventType                    @map("event_type")
-  actorId       String?        @db.Uuid           @map("actor_id")
-  ipAddress     String         @db.Inet           @map("ip_address")
-  userAgentHash String?        @db.Char(64)       @map("user_agent_hash")
-  result        AuditResult
-  errorCode     String?        @db.VarChar(50)    @map("error_code")
+  sessionId     String?        @db.Uuid     @map("session_id")
+  actorId       String?        @db.Uuid     @map("actor_id")
+  eventType     AuditEventType              @map("event_type")
+  result        AuditResult                 @map("result")
+  ipAddress     String         @db.Inet     @map("ip_address")
+  userAgentHash String?        @db.Char(64) @map("user_agent_hash")
   metadata      Json?
   createdAt     DateTime       @default(now()) @db.Timestamptz @map("created_at")
 
   session TransferSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
-  actor   User?            @relation("ActorLogs", fields: [actorId], references: [id], onDelete: SetNull)
+  actor   User?            @relation("actor_logs", fields: [actorId], references: [id], onDelete: SetNull)
 
-  @@index([createdAt])
-  @@index([sessionId, eventType])
-  @@index([actorId, createdAt])
-  @@index([ipAddress, createdAt])
-  @@index([eventType, result, createdAt])
+  @@index([createdAt],                    name: "idx_al_created_at")
+  @@index([sessionId, eventType],         name: "idx_al_session_event")
+  @@index([actorId, createdAt],           name: "idx_al_actor")
+  @@index([ipAddress, createdAt],         name: "idx_al_ip")
+  @@index([eventType, result, createdAt], name: "idx_al_event_result")
   @@map("audit_logs")
 }
 
-// ── Model: webhook_configs ───────────────────────────────────────
-
 model WebhookConfig {
   id          String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId      String         @db.Uuid            @map("user_id")
-  endpointUrl String         @db.VarChar(2048)   @map("endpoint_url")
-  secretEnc   String         @db.Text            @map("secret_enc")
-  events      WebhookEvent[]
-  isActive    Boolean        @default(true)      @map("is_active")
+  userId      String         @db.Uuid          @map("user_id")
+  endpointUrl String         @db.VarChar(2048) @map("endpoint_url")
+  secretEnc   String         @db.Text          @map("secret_enc")
+  events      WebhookEvent[] @default([])
+  isActive    Boolean        @default(true)    @map("is_active")
   createdAt   DateTime       @default(now()) @db.Timestamptz @map("created_at")
   updatedAt   DateTime       @updatedAt      @db.Timestamptz @map("updated_at")
 
   user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   deliveries WebhookDelivery[]
 
-  @@index([userId, isActive])
+  @@index([userId, isActive], name: "idx_wc_user_active")
   @@map("webhook_configs")
 }
 
-// ── Model: webhook_deliveries ────────────────────────────────────
-
 model WebhookDelivery {
   id          String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  configId    String                @db.Uuid            @map("config_id")
-  eventType   WebhookEvent                              @map("event_type")
-  eventId     String                @unique @db.Uuid    @map("event_id")
-  payloadHash String                @db.Char(64)        @map("payload_hash")
-  httpStatus  Int?                  @db.SmallInt        @map("http_status")
+  configId    String                @db.Uuid         @map("config_id")
+  eventType   WebhookEvent                           @map("event_type")
+  eventId     String                @unique @db.Uuid @map("event_id")
+  payloadHash String                @db.Char(64)     @map("payload_hash")
+  httpStatus  Int?                  @db.SmallInt     @map("http_status")
   status      WebhookDeliveryStatus @default(pending)
   retryCount  Int                   @default(0) @db.SmallInt @map("retry_count")
-  nextRetryAt DateTime?             @db.Timestamptz     @map("next_retry_at")
+  nextRetryAt DateTime?             @db.Timestamptz  @map("next_retry_at")
   createdAt   DateTime              @default(now()) @db.Timestamptz @map("created_at")
   updatedAt   DateTime              @updatedAt      @db.Timestamptz @map("updated_at")
 
   config WebhookConfig @relation(fields: [configId], references: [id], onDelete: Cascade)
 
-  @@index([configId, status])
-  @@index([status, nextRetryAt])
-  @@index([eventId])
+  @@index([configId, status],    name: "idx_wd_config_status")
+  @@index([status, nextRetryAt], name: "idx_wd_status_retry")
+  @@index([eventId],             name: "idx_wd_event_id")
   @@map("webhook_deliveries")
 }

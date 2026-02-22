@@ -62,7 +62,7 @@ authRoute.post('/login', async (c) => {
   }
 
   const { email, password } = result.data
-  const ipAddress = c.req.header('X-Forwarded-For') ?? c.req.header('X-Real-IP')
+  const ipAddress = c.req.header('X-Forwarded-For') ?? c.req.header('X-Real-IP') ?? '127.0.0.1'
   const userAgent = c.req.header('User-Agent')
 
   const loginResult = await login({ email, password, ipAddress, userAgent })
@@ -89,7 +89,7 @@ authRoute.post('/totp/verify', async (c) => {
   }
 
   const { url_token, email, otp } = result.data
-  const ipAddress = c.req.header('X-Forwarded-For') ?? c.req.header('X-Real-IP')
+  const ipAddress = c.req.header('X-Forwarded-For') ?? c.req.header('X-Real-IP') ?? '127.0.0.1'
   const userAgent = c.req.header('User-Agent')
 
   const totpResult = await verifyTotp({ urlToken: url_token, email, otp, ipAddress, userAgent })

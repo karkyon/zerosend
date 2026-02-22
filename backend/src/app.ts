@@ -1,3 +1,4 @@
+import "dotenv/config.js"
 // =====================================
 // ファイルパス  : zerosend/src/app.ts
 //

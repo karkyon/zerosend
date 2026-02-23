@@ -150,9 +150,11 @@ export interface InitiateTransferRequest {
 
 /** POST /api/v1/transfer/initiate レスポンス */
 export interface InitiateTransferResponse {
-  session_id: string
-  upload_url: string           // 署名付きPUT URL（クラウドストレージへ直接PUT）
-  recipient_public_key_b64: string  // ML-KEM-768 公開鍵 (Base64)
+  session_id:               string
+  url_token:                string
+  upload_url:               string
+  recipient_public_key_b64: string
+  expires_at:               string
 }
 
 /** POST /api/v1/transfer/:id/key リクエスト */

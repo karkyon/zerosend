@@ -91,8 +91,8 @@ const initialState = {
   recipientEmail: '',
   recipientPublicKeyB64: null,
   hasKyberKey: false,
-  cloudProvider: 'server' as CloudProvider,
-  expiresInSeconds: 86400,    // デフォルト: 24h
+  cloudProvider: 'box' as CloudProvider,  // ← 'server' から 'box' に修正
+  expiresInSeconds: 86400,
   maxDownloads: 1,
   twofaType: 'totp' as TwoFaType,
   sessionId: null,

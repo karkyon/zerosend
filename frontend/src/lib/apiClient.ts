@@ -63,13 +63,14 @@ function createApiClient(): KyInstance {
         },
       ],
       afterResponse: [
-        async (request, _options, response) => {
-          // ログインエンドポイントの401は除外（認証試行の失敗は正常なフロー）
-          const isAuthEndpoint = request.url.includes('/auth/login') ||
-                                request.url.includes('/auth/register') ||
-                                request.url.includes('/auth/totp')
-          if (response.status === 401 && !isAuthEndpoint) {
-            _onUnauthorized?.()
+        async (_request, _options, response) => {
+          if (response.status === 401) {
+            // トークンが存在する = ログイン済みユーザーの認証切れ → 強制ログアウト
+            // トークンなし = ログイン試行の失敗 → 何もしない（authService が処理）
+            const token = _getToken?.()
+            if (token) {
+              _onUnauthorized?.()
+            }
           }
           return response
         },

@@ -1,0 +1,2605 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZeroSend フロントエンド構築手順書 v2.0 — Phase 1 認証・鍵管理</title>
+<style>
+:root{
+  --navy:#0F2744;--blue:#2563EB;--blue-l:#EFF6FF;
+  --green:#15803D;--green-l:#ECFDF5;
+  --amber:#B45309;--amber-l:#FFFBEB;
+  --red:#B91C1C;--red-l:#FEF2F2;
+  --purple:#7C3AED;--purple-l:#F5F3FF;
+  --teal:#0D9488;--teal-l:#F0FDFA;
+  --gray:#6B7280;--light:#F8FAFC;
+  --border:#E2E8F0;--code:#1E293B;--codefg:#E2E8F0;
+  --done:#065F46;--done-l:#ECFDF5;
+  --indigo:#4338CA;--indigo-l:#EEF2FF;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;font-size:14px;color:#1E293B;background:#F1F5F9;line-height:1.65}
+.wrap{max-width:1060px;margin:0 auto;padding:32px 24px}
+.cover{background:linear-gradient(135deg,#0F2744 0%,#1E3A5F 60%,#312e81 100%);color:#fff;padding:52px 44px;border-radius:16px;margin-bottom:36px;box-shadow:0 12px 40px rgba(0,0,0,.25)}
+.cover h1{font-size:34px;font-weight:900;letter-spacing:-.5px;line-height:1.25}
+.cover .en{font-size:13px;color:#a5b4fc;margin-top:5px}
+.vbadge{display:inline-block;background:var(--teal);padding:5px 16px;border-radius:20px;font-size:13px;font-weight:700;margin-top:14px}
+.part-badge{display:inline-block;background:#7C3AED;padding:5px 16px;border-radius:20px;font-size:13px;font-weight:700;margin-top:8px;margin-left:8px}
+.cg{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:24px}
+.ci{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:10px 14px}
+.ci .l{font-size:10px;color:#a5b4fc;text-transform:uppercase;letter-spacing:.06em}
+.ci .v{font-family:'Courier New',monospace;font-size:11.5px;color:#fff;margin-top:3px}
+.nav{background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin-bottom:24px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.nav .nt{font-weight:700;color:var(--navy);font-size:13px;margin-bottom:8px}
+.nav-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
+.nav-item{font-size:12px;color:#374151;padding:4px 8px;background:#F8FAFC;border-radius:6px;border:1px solid var(--border)}
+.nav-item a{color:var(--blue);text-decoration:none;font-weight:600}
+h1.s{font-size:22px;font-weight:800;color:var(--navy);border-bottom:3px solid var(--blue);padding-bottom:8px;margin:40px 0 18px}
+h2.s{font-size:16px;font-weight:700;color:var(--navy);border-left:5px solid var(--blue);padding-left:10px;margin:24px 0 10px}
+p{font-size:13px;color:#374151;margin:5px 0 8px;line-height:1.7}
+ul,ol{padding-left:20px;font-size:13px;color:#374151;margin:6px 0}
+li{margin:3px 0}
+.step{display:flex;border-radius:10px;overflow:hidden;border:1px solid var(--border);margin:20px 0 14px;box-shadow:0 1px 4px rgba(0,0,0,.07)}
+.sn{padding:14px 16px;font-weight:800;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:76px}
+.sn .sl{font-size:9px;text-transform:uppercase;letter-spacing:.1em;opacity:.75}
+.sn .sv{font-size:26px;line-height:1}
+.sb{padding:12px 18px;flex:1}
+.sb .st{font-size:15px;font-weight:700}
+.sb .ss{font-size:12px;color:var(--gray);margin-top:3px}
+.step.todo .sn{background:var(--purple);color:#fff}.step.todo .sb{background:var(--purple-l)}.step.todo .st{color:var(--purple)}
+.step.done .sn{background:var(--done);color:#fff}.step.done .sb{background:var(--done-l)}.step.done .st{color:var(--done)}
+.step.info .sn{background:var(--indigo);color:#fff}.step.info .sb{background:var(--indigo-l)}.step.info .st{color:var(--indigo)}
+.step.sec-step .sn{background:#9333ea;color:#fff}.step.sec-step .sb{background:#fdf4ff}.step.sec-step .st{color:#7C3AED}
+.box{border-radius:8px;padding:12px 16px;margin:10px 0;border-left:5px solid;font-size:13px}
+.box .bt{font-weight:700;font-size:11px;margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em}
+.box p,.box li{margin:3px 0;line-height:1.6}
+.box ul{padding-left:18px}
+.tip{background:var(--blue-l);border-color:var(--blue)}.tip .bt{color:var(--blue)}
+.ok{background:var(--done-l);border-color:var(--done)}.ok .bt{color:var(--done)}
+.warn{background:var(--amber-l);border-color:var(--amber)}.warn .bt{color:var(--amber)}
+.err{background:var(--red-l);border-color:var(--red)}.err .bt{color:var(--red)}
+.sec{background:#FDF4FF;border-color:#A855F7}.sec .bt{color:#7C3AED}
+.new-b{background:var(--teal-l);border-color:var(--teal)}.new-b .bt{color:var(--teal)}
+.clbl{font-size:11px;color:#94A3B8;font-family:'Courier New',monospace;background:#0F172A;border:1px solid #334155;border-bottom:none;padding:5px 14px;border-radius:8px 8px 0 0;display:inline-block;margin-top:8px}
+pre{background:var(--code);border:1px solid #334155;border-radius:0 8px 8px 8px;padding:16px 18px;font-family:'Courier New',monospace;font-size:12px;color:var(--codefg);line-height:1.75;overflow-x:auto;margin:0 0 14px;white-space:pre}
+.result{background:#0a1628;border:1px solid #1e3a5f;border-radius:8px;padding:14px 18px;font-family:'Courier New',monospace;font-size:12px;color:#93C5FD;line-height:1.8;margin:0 0 14px;white-space:pre}
+.result .ok-r{color:#4ADE80}
+.result .err-r{color:#F87171}
+.result .warn-r{color:#FCD34D}
+table{width:100%;border-collapse:collapse;font-size:13px;margin:12px 0;border-radius:8px;overflow:hidden;box-shadow:0 1px 6px rgba(0,0,0,.08)}
+th{background:var(--navy);color:#fff;padding:9px 13px;text-align:left;font-size:12px;font-weight:600}
+td{padding:8px 13px;border-bottom:1px solid var(--border);vertical-align:top}
+tr:nth-child(even) td{background:var(--light)}
+td code{font-family:'Courier New',monospace;font-size:11.5px;background:#EFF6FF;color:var(--navy);padding:1px 5px;border-radius:3px}
+.dc{color:var(--done);font-weight:700}
+.rc{color:var(--red);font-weight:700}
+.tree{background:var(--code);border:1px solid #334155;border-radius:10px;padding:18px 22px;font-family:'Courier New',monospace;font-size:12.5px;color:var(--codefg);line-height:2;margin:12px 0;overflow-x:auto}
+.tree .d{color:#93C5FD;font-weight:700}
+.tree .fn{color:#E2E8F0}
+.tree .cm{color:#64748B}
+.tree .new-f{color:#4ADE80;font-weight:700}
+.badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;margin:0 2px}
+.b-new{background:#DCFCE7;color:#15803D}
+.b-edit{background:#DBEAFE;color:#1D4ED8}
+.file-card{background:#fff;border:1px solid var(--border);border-radius:10px;margin:14px 0;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.07)}
+.file-card .fc-head{background:#0F172A;padding:10px 18px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.file-card .fc-path{font-family:'Courier New',monospace;font-size:12.5px;color:#93C5FD;font-weight:700}
+.file-card .fc-badge{font-size:10px;padding:2px 8px;border-radius:10px}
+.file-card .fc-badge.new{background:#064E3B;color:#6EE7B7}
+.file-card .fc-badge.upd{background:#1E3A5F;color:#93C5FD}
+.file-card .fc-badge.sec{background:#4C1D95;color:#C4B5FD}
+.file-card .fc-body{padding:14px 18px;font-size:13px;color:#374151}
+.file-card .fc-desc{margin-bottom:4px;line-height:1.7}
+hr.pb{border:none;border-top:2px dashed var(--border);margin:44px 0}
+.tag-f{display:inline-block;background:var(--indigo-l);color:var(--indigo);font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;margin-left:6px;border:1px solid #C7D2FE}
+.security-critical{background:linear-gradient(135deg,#1a0533,#2d1454);border:2px solid #9333ea;border-radius:12px;padding:20px 24px;margin:16px 0}
+.security-critical .sc-title{color:#e879f9;font-weight:800;font-size:14px;margin-bottom:12px}
+.security-critical ul{color:#d8b4fe;font-size:13px;padding-left:20px}
+.security-critical li{margin:6px 0;line-height:1.6}
+.security-critical strong{color:#f0abfc}
+</style>
+</head>
+<body><div class="wrap">
+
+<!-- COVER -->
+<div class="cover">
+  <div>
+    <span class="vbadge">v2.0</span>
+    <span class="part-badge">Phase 1 — 認証・鍵管理 F-11〜F-15</span>
+  </div>
+  <h1 style="margin-top:16px">ZeroSend<br>フロントエンド構築手順書</h1>
+  <p class="en">Next-Generation Zero-Retention Quantum-Resistant File Transfer — Phase 1 Auth &amp; Key Management</p>
+  <div class="cg">
+    <div class="ci"><div class="l">前提</div><div class="v">Phase 0 完了済み</div></div>
+    <div class="ci"><div class="l">新規ファイル</div><div class="v">5ファイル</div></div>
+    <div class="ci"><div class="l">更新ファイル</div><div class="v">3ファイル</div></div>
+    <div class="ci"><div class="l">追加パッケージ</div><div class="v">なし（確認のみ）</div></div>
+    <div class="ci"><div class="l">暗号ライブラリ</div><div class="v">ml_kem768.keygen()</div></div>
+    <div class="ci"><div class="l">秘密鍵保存先</div><div class="v">IndexedDB のみ</div></div>
+    <div class="ci"><div class="l">JWT 保存先</div><div class="v">Zustand メモリのみ</div></div>
+    <div class="ci"><div class="l">監査ログ</div><div class="v">securityLogger.ts</div></div>
+  </div>
+</div>
+
+<!-- 目次 -->
+<div class="nav">
+  <div class="nt">📋 この手順書の対象タスク（F-11〜F-15）</div>
+  <div class="nav-grid">
+    <div class="nav-item"><a href="#step1">STEP 1</a> パッケージ確認</div>
+    <div class="nav-item"><a href="#step2">STEP 2</a> ディレクトリ作成</div>
+    <div class="nav-item"><a href="#step3">STEP 3</a> securityLogger.ts <span class="badge b-new">NEW</span></div>
+    <div class="nav-item"><a href="#step4">STEP 4</a> authService.ts <span class="badge b-new">NEW</span></div>
+    <div class="nav-item"><a href="#step5">STEP 5</a> authStore.ts <span class="badge b-edit">UPDATE</span></div>
+    <div class="nav-item"><a href="#step6">STEP 6</a> LoginPage.tsx <span class="badge b-edit">UPDATE</span></div>
+    <div class="nav-item"><a href="#step7">STEP 7</a> RegisterPage.tsx <span class="badge b-new">NEW</span></div>
+    <div class="nav-item"><a href="#step8">STEP 8</a> TotpModal.tsx <span class="badge b-new">NEW</span></div>
+    <div class="nav-item"><a href="#step9">STEP 9</a> ProtectedRoute.tsx <span class="badge b-edit">UPDATE</span></div>
+    <div class="nav-item"><a href="#step10">STEP 10</a> App.tsx <span class="badge b-edit">UPDATE</span></div>
+    <div class="nav-item"><a href="#step11">STEP 11</a> 動作確認・テスト</div>
+    <div class="nav-item"><a href="#trouble">STEP 12</a> トラブルシューティング</div>
+  </div>
+</div>
+
+<div class="box warn">
+  <div class="bt">⚠️ 前提条件</div>
+  <p>Phase 0（F-01〜F-10）完了済みであること。バックエンドが <code>docker compose up -d</code> で起動中であること。</p>
+</div>
+
+<div class="security-critical">
+  <div class="sc-title">🔐 Phase 1 セキュリティ設計の3大原則（作業前に必読）</div>
+  <ul>
+    <li><strong>秘密鍵 (ML-KEM-768 secretKey)</strong> は IndexedDB にのみ保存。絶対にサーバーへ送信しない</li>
+    <li><strong>JWT (access_token)</strong> は Zustand メモリにのみ保持。localStorage / sessionStorage には絶対に保存しない（XSS対策）</li>
+    <li><strong>全認証イベント</strong>は securityLogger.ts で記録する</li>
+  </ul>
+</div>
+
+<hr class="pb">
+
+<!-- STEP 1 -->
+<h1 class="s" id="step1">STEP 1 — パッケージ確認</h1>
+<div class="step todo">
+  <div class="sn"><div class="sl">STEP</div><div class="sv">1</div></div>
+  <div class="sb">
+    <div class="st">@noble/post-quantum のインストール確認</div>
+    <div class="ss">Phase 0 でインストール済みのはず。未インストールの場合のみ追加する</div>
+  </div>
+</div>
+<div class="clbl">frontend/ で実行</div>
+<pre>cd ~/projects/zerosend/frontend
+pnpm list @noble/post-quantum</pre>
+<div class="result"><span class="ok-r">✅ インストール済みの場合:</span>
+dependencies:
+@noble/post-quantum 0.x.x
+
+<span class="warn-r">✗ 未インストールの場合のみ実行:</span>
+pnpm add @noble/post-quantum</div>
+<div class="box ok"><div class="bt">✅ STEP 1 完了確認</div><p>@noble/post-quantum が表示されれば OK。</p></div>
+
+<hr class="pb">
+
+<!-- STEP 2 -->
+<h1 class="s" id="step2">STEP 2 — 新規ディレクトリ作成</h1>
+<div class="step todo">
+  <div class="sn"><div class="sl">STEP</div><div class="sv">2</div></div>
+  <div class="sb">
+    <div class="st">services/ と components/auth/ の2つを新規作成する</div>
+    <div class="ss">frontend/src/ 直下で実行すること</div>
+  </div>
+</div>
+<div class="clbl">ターミナル</div>
+<pre>mkdir -p src/services src/components/auth</pre>
+<div class="clbl">確認</div>
+<pre>find src -type d | sort</pre>
+<div class="result">src/components/<span class="ok-r">auth</span>       ← 新規
+src/<span class="ok-r">services</span>           ← 新規</div>
+<div class="box ok"><div class="bt">✅ STEP 2 完了確認</div><p>上記2ディレクトリが表示されれば OK。</p></div>
+
+<hr class="pb">
+
+<!-- STEP 3: securityLogger -->
+<h1 class="s" id="step3">STEP 3 — src/lib/securityLogger.ts 新規作成 <span class="tag-f">全タスク共通基盤</span></h1>
+<div class="step sec-step">
+  <div class="sn"><div class="sl">STEP</div><div class="sv">3</div></div>
+  <div class="sb">
+    <div class="st">🔐 セキュリティイベントロガーを作成する（最初に作ること）</div>
+    <div class="ss">他の全ファイルがこのファイルをインポートする。必ず先に作成すること</div>
+  </div>
+</div>
+<div class="file-card">
+  <div class="fc-head">
+    <span class="fc-path">src/lib/securityLogger.ts</span>
+    <span class="fc-badge new">🆕 新規作成</span>
+  </div>
+  <div class="fc-body"><p class="fc-desc">全認証イベント・暗号鍵操作を記録するロガー。外部依存なし（ブラウザ標準 API のみ）。<br>機密情報（パスワード・秘密鍵）は絶対にログ出力しない。</p></div>
+</div>
+<div class="clbl">frontend/src/lib/securityLogger.ts — 完全なファイル内容</div>
+<pre>// =============================================================
+// ZeroSend — lib/securityLogger.ts
+//
+// パス        : frontend/src/lib/securityLogger.ts
+// 作成日      : 2026-02-23
+// 更新日      : 2026-02-23
+//
+// 概要        : 認証・暗号鍵操作に関するセキュリティイベントの一元ロガー
+//               開発環境: カラーコード付きコンソール出力 (色分け・groupCollapsed)
+//               本番環境: バックエンド監査ログ送信へ拡張可能 (コメントアウト済)
+//
+// セキュリティ設計原則:
+//   - 全認証イベントに ISO 8601 タイムスタンプを付与
+//   - 機密情報（パスワード・秘密鍵）は絶対にログ出力しない
+//   - CRITICAL/ERROR レベルのイベントは console.error に昇格
+//   - ユーザーエージェント情報を記録（不正アクセス追跡用）
+//
+// 依存関係    :
+//   (外部依存なし — ブラウザ標準 API のみ使用)
+//
+// イベント種別:
+//   認証フロー  : LOGIN_ATTEMPT / LOGIN_SUCCESS / LOGIN_FAILURE / LOGOUT / LOGOUT_FORCED
+//   ユーザー登録: REGISTER_ATTEMPT / REGISTER_SUCCESS / REGISTER_FAILURE
+//   TOTP 2FA   : TOTP_ATTEMPT / TOTP_SUCCESS / TOTP_FAILURE / TOTP_LOCKED
+//   暗号鍵操作  : KEY_PAIR_GENERATE_START / KEY_PAIR_GENERATE_SUCCESS
+//                KEY_PAIR_STORE_SUCCESS / KEY_PAIR_STORE_FAILURE / KEY_PAIR_RETRIEVE
+//   トークン    : TOKEN_NEAR_EXPIRY / TOKEN_EXPIRED
+//   アクセス制御: UNAUTHORIZED_ACCESS / FORBIDDEN_ACCESS
+//
+// 重大度レベル:
+//   INFO     : 正常なイベント（ログイン成功・鍵生成完了 等）
+//   WARN     : 注意が必要なイベント（ログイン失敗・TOTP失敗・期限切れ警告 等）
+//   ERROR    : エラーイベント（不正アクセス試行 等）
+//   CRITICAL : 即時対応が必要なイベント（TOTP URLロック・鍵保存失敗 等）
+//
+// 使用箇所    :
+//   @/services/authService              ログイン/登録/TOTP 各処理
+//   @/stores/authStore                  トークン有効期限・ログアウト
+//   @/components/layout/ProtectedRoute  不正アクセス試行
+// =============================================================
+
+// ─── イベント種別定義 ─────────────────────────────────────────
+
+export type SecurityEventType =
+  // 認証フロー
+  | &#x27;LOGIN_ATTEMPT&#x27;
+  | &#x27;LOGIN_SUCCESS&#x27;
+  | &#x27;LOGIN_FAILURE&#x27;
+  | &#x27;LOGOUT&#x27;
+  | &#x27;LOGOUT_FORCED&#x27;           // 401 / トークン期限切れによる強制ログアウト
+  // ユーザー登録
+  | &#x27;REGISTER_ATTEMPT&#x27;
+  | &#x27;REGISTER_SUCCESS&#x27;
+  | &#x27;REGISTER_FAILURE&#x27;
+  // TOTP 2FA
+  | &#x27;TOTP_ATTEMPT&#x27;
+  | &#x27;TOTP_SUCCESS&#x27;
+  | &#x27;TOTP_FAILURE&#x27;
+  | &#x27;TOTP_LOCKED&#x27;             // 5回失敗によるURLロック (423)
+  // 暗号鍵操作（プライバシー重要）
+  | &#x27;KEY_PAIR_GENERATE_START&#x27;
+  | &#x27;KEY_PAIR_GENERATE_SUCCESS&#x27;
+  | &#x27;KEY_PAIR_STORE_SUCCESS&#x27;  // IndexedDB 保存成功
+  | &#x27;KEY_PAIR_STORE_FAILURE&#x27;
+  | &#x27;KEY_PAIR_RETRIEVE&#x27;       // 復号時に秘密鍵取得
+  // トークン管理
+  | &#x27;TOKEN_NEAR_EXPIRY&#x27;       // 有効期限まで閾値以内
+  | &#x27;TOKEN_EXPIRED&#x27;           // 期限切れ検出
+  // アクセス制御
+  | &#x27;UNAUTHORIZED_ACCESS&#x27;     // 未認証でのルートアクセス試行
+  | &#x27;FORBIDDEN_ACCESS&#x27;        // admin 権限不足でのアクセス試行
+
+export type SecurityLevel = &#x27;INFO&#x27; | &#x27;WARN&#x27; | &#x27;ERROR&#x27; | &#x27;CRITICAL&#x27;
+
+// ─── イベントペイロード ────────────────────────────────────────
+
+interface SecurityEventPayload {
+  type: SecurityEventType
+  level: SecurityLevel
+  timestamp: string           // ISO 8601
+  userId?: string             // ログイン済みユーザーのID
+  email?: string              // 対象メールアドレス（ハッシュ化推奨だが今は平文）
+  path?: string               // アクセス試行パス
+  detail?: Record&lt;string, unknown&gt;  // 追加情報（機密情報は含めない）
+  userAgent: string
+}
+
+// ─── 開発環境コンソールスタイル ───────────────────────────────
+
+const CONSOLE_STYLES: Record&lt;SecurityLevel, string&gt; = {
+  INFO:     &#x27;color: #6366f1; font-weight: 600&#x27;,
+  WARN:     &#x27;color: #f59e0b; font-weight: 700&#x27;,
+  ERROR:    &#x27;color: #ef4444; font-weight: 700&#x27;,
+  CRITICAL: &#x27;color: #dc2626; font-weight: 700; text-decoration: underline; font-size: 13px&#x27;,
+}
+
+const LEVEL_BADGE: Record&lt;SecurityLevel, string&gt; = {
+  INFO:     &#x27;🔵 INFO&#x27;,
+  WARN:     &#x27;🟡 WARN&#x27;,
+  ERROR:    &#x27;🔴 ERROR&#x27;,
+  CRITICAL: &#x27;🚨 CRITICAL&#x27;,
+}
+
+// ─── 本番環境バックエンド送信（拡張点） ─────────────────────────
+//
+// 将来的には GET /admin/logs と連携する監査イベントを送信する
+// 現時点はフロントエンドログのみ（サーバーサイドは backend の audit_logs テーブルで記録）
+//
+// async function sendToAuditBackend(event: SecurityEventPayload): Promise&lt;void&gt; {
+//   try {
+//     await fetch(`${import.meta.env.VITE_API_BASE_URL}/audit/frontend`, {
+//       method: &#x27;POST&#x27;,
+//       headers: { &#x27;Content-Type&#x27;: &#x27;application/json&#x27; },
+//       body: JSON.stringify(event),
+//       keepalive: true,  // ページ離脱時も送信完了させる
+//     })
+//   } catch {
+//     // 監査ログ送信失敗はサイレントに（本来の処理を止めない）
+//   }
+// }
+
+// ─── メインロガー関数 ─────────────────────────────────────────
+
+/**
+ * セキュリティイベントを記録する
+ *
+ * @param type    - イベント種別
+ * @param level   - 重大度レベル
+ * @param detail  - 追加コンテキスト（パスワード・秘密鍵などを含めないこと）
+ * @param userId  - 対象ユーザーID（認証済みの場合）
+ * @param email   - 対象メールアドレス（任意）
+ *
+ * @example
+ * logSecurityEvent(&#x27;LOGIN_ATTEMPT&#x27;, &#x27;INFO&#x27;, { email: &#x27;user@example.com&#x27; })
+ * logSecurityEvent(&#x27;TOTP_FAILURE&#x27;, &#x27;WARN&#x27;, { remainingAttempts: 3 }, userId)
+ * logSecurityEvent(&#x27;UNAUTHORIZED_ACCESS&#x27;, &#x27;ERROR&#x27;, { path: &#x27;/admin&#x27; })
+ */
+export function logSecurityEvent(
+  type: SecurityEventType,
+  level: SecurityLevel = &#x27;INFO&#x27;,
+  detail?: Record&lt;string, unknown&gt;,
+  userId?: string,
+  email?: string,
+): void {
+  const event: SecurityEventPayload = {
+    type,
+    level,
+    timestamp: new Date().toISOString(),
+    userId,
+    email,
+    path: window.location.pathname,
+    detail,
+    userAgent: navigator.userAgent,
+  }
+
+  if (import.meta.env.DEV) {
+    const style = CONSOLE_STYLES[level]
+    const badge = LEVEL_BADGE[level]
+
+    if (level === &#x27;CRITICAL&#x27; || level === &#x27;ERROR&#x27;) {
+      console.error(
+        `%c[ZeroSend Security] ${badge} — ${event.type}`,
+        style,
+        &#x27;\n&#x27;,
+        { timestamp: event.timestamp, userId, email, path: event.path, detail },
+      )
+    } else {
+      console.groupCollapsed(
+        `%c[ZeroSend Security] ${badge} — ${event.type}`,
+        style,
+      )
+      console.log(&#x27;⏱  Timestamp:&#x27;, event.timestamp)
+      console.log(&#x27;📍 Path:&#x27;, event.path)
+      if (userId) console.log(&#x27;👤 UserID:&#x27;, userId)
+      if (email)  console.log(&#x27;📧 Email:&#x27;, email)
+      if (detail) console.log(&#x27;📋 Detail:&#x27;, detail)
+      console.log(&#x27;🖥  UserAgent:&#x27;, event.userAgent.substring(0, 80) + &#x27;...&#x27;)
+      console.groupEnd()
+    }
+  }
+
+  // 本番環境バックエンド送信（必要時にコメントアウト解除）
+  // if (import.meta.env.PROD &amp;&amp; (level === &#x27;ERROR&#x27; || level === &#x27;CRITICAL&#x27; || level === &#x27;WARN&#x27;)) {
+  //   sendToAuditBackend(event)
+  // }
+}
+
+// ─── 便利ラッパー ─────────────────────────────────────────────
+
+/** ログイン試行 */
+export const logLoginAttempt = (email: string) =&gt;
+  logSecurityEvent(&#x27;LOGIN_ATTEMPT&#x27;, &#x27;INFO&#x27;, undefined, undefined, email)
+
+/** ログイン成功 */
+export const logLoginSuccess = (userId: string, email: string) =&gt;
+  logSecurityEvent(&#x27;LOGIN_SUCCESS&#x27;, &#x27;INFO&#x27;, undefined, userId, email)
+
+/** ログイン失敗 */
+export const logLoginFailure = (email: string, reason: string) =&gt;
+  logSecurityEvent(&#x27;LOGIN_FAILURE&#x27;, &#x27;WARN&#x27;, { reason }, undefined, email)
+
+/** ログアウト（通常） */
+export const logLogout = (userId: string) =&gt;
+  logSecurityEvent(&#x27;LOGOUT&#x27;, &#x27;INFO&#x27;, undefined, userId)
+
+/** ログアウト（強制） */
+export const logForcedLogout = (reason: &#x27;token_expired&#x27; | &#x27;unauthorized_401&#x27;) =&gt;
+  logSecurityEvent(&#x27;LOGOUT_FORCED&#x27;, &#x27;WARN&#x27;, { reason })
+
+/** ユーザー登録試行 */
+export const logRegisterAttempt = (email: string) =&gt;
+  logSecurityEvent(&#x27;REGISTER_ATTEMPT&#x27;, &#x27;INFO&#x27;, undefined, undefined, email)
+
+/** ユーザー登録成功 */
+export const logRegisterSuccess = (userId: string, email: string) =&gt;
+  logSecurityEvent(&#x27;REGISTER_SUCCESS&#x27;, &#x27;INFO&#x27;, undefined, userId, email)
+
+/** ユーザー登録失敗 */
+export const logRegisterFailure = (email: string, reason: string) =&gt;
+  logSecurityEvent(&#x27;REGISTER_FAILURE&#x27;, &#x27;WARN&#x27;, { reason }, undefined, email)
+
+/** TOTP 検証失敗 */
+export const logTotpFailure = (remainingAttempts: number) =&gt;
+  logSecurityEvent(&#x27;TOTP_FAILURE&#x27;, &#x27;WARN&#x27;, { remainingAttempts })
+
+/** TOTP URLロック */
+export const logTotpLocked = () =&gt;
+  logSecurityEvent(&#x27;TOTP_LOCKED&#x27;, &#x27;CRITICAL&#x27;, undefined)
+
+/** 鍵ペア生成完了 */
+export const logKeyPairGenerated = (userId: string, fingerprintPrefix: string) =&gt;
+  logSecurityEvent(&#x27;KEY_PAIR_GENERATE_SUCCESS&#x27;, &#x27;INFO&#x27;, { fingerprintPrefix }, userId)
+
+/** 不正アクセス試行 */
+export const logUnauthorizedAccess = (path: string) =&gt;
+  logSecurityEvent(&#x27;UNAUTHORIZED_ACCESS&#x27;, &#x27;ERROR&#x27;, { path })
+
+/** 権限不足アクセス試行 */
+export const logForbiddenAccess = (path: string, role: string) =&gt;
+  logSecurityEvent(&#x27;FORBIDDEN_ACCESS&#x27;, &#x27;ERROR&#x27;, { path, role })
+</pre>
+<div class="box ok"><div class="bt">✅ STEP 3 完了確認</div><p>src/lib/securityLogger.ts が作成されれば OK。</p></div>
+
+<hr class="pb">
+
+<!-- STEP 4: authService -->
+<h1 class="s" id="step4">STEP 4 — src/services/authService.ts 新規作成 <span class="tag-f">F-11〜F-14</span></h1>
+<div class="step todo">
+  <div class="sn"><div class="sl">STEP</div><div class="sv">4</div></div>
+  <div class="sb">
+    <div class="st">認証 API Service レイヤーを作成する</div>
+    <div class="ss">バックエンド(snake_case) ↔ フロントエンド(camelCase) 変換・エラーメッセージ変換をここで吸収する</div>
+  </div>
+</div>
+<div class="file-card">
+  <div class="fc-head">
+    <span class="fc-path">src/services/authService.ts</span>
+    <span class="fc-badge new">🆕 新規作成</span>
+  </div>
+  <div class="fc-body"><p class="fc-desc">POST /auth/login・/auth/register・/auth/totp/verify の3エンドポイントを呼び出すサービス。<br>バックエンドのフィールド名不一致（display_name, public_key_b64, otp 等）をすべてここで変換する。</p></div>
+</div>
+<div class="box err">
+  <div class="bt">❌ バックエンドとフロントの型定義の不一致（このファイルが自動変換）</div>
+  <table style="margin-top:8px">
+    <tr><th>バックエンド実際フィールド</th><th>フロントエンド型 (types/api.ts)</th><th>変換方向</th></tr>
+    <tr><td><code>display_name</code></td><td><code>displayName</code></td><td>登録時: camelCase → snake_case で送信</td></tr>
+    <tr><td><code>public_key_b64</code></td><td><code>publicKeyKyberB64</code></td><td>登録時: camelCase → snake_case で送信</td></tr>
+    <tr><td><code>otp</code></td><td><code>totp_code</code></td><td>TOTP: otp フィールド名で送信（types/api.ts と異なる）</td></tr>
+    <tr><td><code>user.display_name</code></td><td><code>user.displayName</code></td><td>ログイン応答: snake_case → camelCase に変換</td></tr>
+    <tr><td>email（未返却）</td><td><code>user.email</code></td><td>ログイン入力値をそのまま保持</td></tr>
+  </table>
+</div>
+<div class="clbl">frontend/src/services/authService.ts — 完全なファイル内容</div>
+<pre>// =============================================================
+// ZeroSend — services/authService.ts
+//
+// パス        : frontend/src/services/authService.ts
+// 作成日      : 2026-02-23
+// 更新日      : 2026-02-23
+//
+// 概要        : 認証 API 呼び出しの Service レイヤー
+//               バックエンド(snake_case) ↔ フロントエンド(camelCase) 変換
+//               ProblemDetail → ユーザーフレンドリーなエラーメッセージ変換
+//
+// セキュリティ設計原則:
+//   - バックエンドのエラー詳細をそのまま UI に露出しない
+//   - パスワード・秘密鍵などの機密情報は引数として一時的に保持するのみ
+//   - 全 API コールは securityLogger で記録
+//   - 429 / 423 レスポンスを適切にハンドリング
+//
+// 依存関係:
+//   @/lib/apiClient        api, ApiError
+//   @/lib/securityLogger   logSecurityEvent 系
+// =============================================================
+
+import { api, ApiError } from &#x27;@/lib/apiClient&#x27;
+import {
+  logLoginAttempt, logLoginSuccess, logLoginFailure,
+  logRegisterAttempt, logRegisterSuccess, logRegisterFailure,
+  logSecurityEvent,
+} from &#x27;@/lib/securityLogger&#x27;
+import type { UserRole } from &#x27;@/types/api&#x27;
+
+// ─── バックエンド実際レスポンス型（snake_case） ────────────────
+// NOTE: types/api.ts の LoginResponse とは別に定義
+//       バックエンド src/routes/auth.route.ts の実装に完全準拠
+
+interface BackendLoginResponse {
+  access_token: string
+  expires_in: number          // 秒数
+  user: {
+    id: string
+    display_name: string      // バックエンドは snake_case
+    role: UserRole
+    // NOTE: email / totpEnabled はバックエンドが返さないため省略
+  }
+}
+
+interface BackendRegisterResponse {
+  user_id: string             // バックエンドは user_id のみ返す
+  key_fingerprint: string     // SHA3-256 フィンガープリント
+}
+
+interface BackendTotpVerifyResponse {
+  auth_token: string
+  expires_in: number          // 秒数 (デフォルト 600)
+}
+
+// ─── フロントエンド用正規化型 ──────────────────────────────────
+
+export interface NormalizedLoginResult {
+  accessToken: string
+  expiresIn: number           // 秒数
+  user: {
+    id: string
+    displayName: string
+    email: string             // ログイン時に入力されたメールを保持
+    role: UserRole
+    totpEnabled: boolean      // バックエンドが未返却のため初期値 false
+  }
+}
+
+export interface NormalizedRegisterResult {
+  userId: string
+  keyFingerprint: string
+}
+
+export interface NormalizedTotpResult {
+  authToken: string
+  expiresIn: number
+}
+
+// ─── エラーメッセージ変換 ─────────────────────────────────────
+//
+// バックエンドのエラー詳細をそのまま露出しない
+// type フィールドで分岐して UI 向けメッセージに変換
+
+function toUserFacingMessage(error: ApiError): string {
+  const { status, problem } = error
+
+  switch (status) {
+    case 400:
+      return &#x27;メールアドレスまたはパスワードの形式が正しくありません&#x27;
+    case 401:
+      return &#x27;メールアドレスまたはパスワードが正しくありません&#x27;
+    case 409:
+      return &#x27;このメールアドレスはすでに登録されています&#x27;
+    case 422:
+      return &#x27;入力内容に不備があります。もう一度確認してください&#x27;
+    case 423: {
+      // URLロック (TOTP 5回失敗)
+      const remaining = (problem as Record&lt;string, unknown&gt;).remaining_attempts as number | undefined
+      return remaining !== undefined
+        ? `認証に失敗しました。残り試行回数: ${remaining}回`
+        : &#x27;認証試行回数の上限に達しました。管理者にお問い合わせください&#x27;
+    }
+    case 429:
+      return &#x27;リクエストが多すぎます。しばらく待ってから再試行してください&#x27;
+    case 500:
+    case 502:
+    case 503:
+      return &#x27;サーバーエラーが発生しました。しばらく待ってから再試行してください&#x27;
+    case 0:
+      return &#x27;ネットワークに接続できません。接続を確認してください&#x27;
+    default:
+      return &#x27;予期しないエラーが発生しました&#x27;
+  }
+}
+
+// ─── API 呼び出し関数 ─────────────────────────────────────────
+
+/**
+ * ログイン処理
+ * POST /api/v1/auth/login
+ *
+ * @param email    - ログイン用メールアドレス
+ * @param password - パスワード（この関数スコープ内のみで保持）
+ * @returns        NormalizedLoginResult
+ * @throws         Error（userFacingMessage付き）
+ */
+export async function loginUser(
+  email: string,
+  password: string,
+): Promise&lt;NormalizedLoginResult&gt; {
+  logLoginAttempt(email)
+
+  try {
+    const raw = await api.post&lt;BackendLoginResponse&gt;(&#x27;auth/login&#x27;, {
+      json: { email, password },
+    })
+
+    const result: NormalizedLoginResult = {
+      accessToken: raw.access_token,
+      expiresIn:   raw.expires_in,
+      user: {
+        id:          raw.user.id,
+        displayName: raw.user.display_name,
+        email,                        // バックエンド未返却のため入力値を使用
+        role:        raw.user.role,
+        totpEnabled: false,           // バックエンド未返却のため初期値
+      },
+    }
+
+    logLoginSuccess(result.user.id, email)
+    return result
+
+  } catch (error) {
+    const message = error instanceof ApiError
+      ? toUserFacingMessage(error)
+      : &#x27;ログイン中にエラーが発生しました&#x27;
+
+    logLoginFailure(email, error instanceof ApiError ? error.problem.type : &#x27;unknown&#x27;)
+
+    throw new Error(message)
+  }
+}
+
+/**
+ * ユーザー登録処理
+ * POST /api/v1/auth/register
+ *
+ * NOTE: パスワードはこの関数スコープ内のみで保持し、完了後に参照を破棄する
+ *       公開鍵 (publicKeyB64) のみサーバーに送信する（秘密鍵は絶対に送らない）
+ *
+ * @param email        - 登録メールアドレス
+ * @param displayName  - 表示名
+ * @param password     - パスワード（この関数スコープ内のみ）
+ * @param publicKeyB64 - ML-KEM-768 公開鍵 (Base64) ← 秘密鍵ではない
+ * @returns            NormalizedRegisterResult
+ * @throws             Error（userFacingMessage付き）
+ */
+export async function registerUser(
+  email: string,
+  displayName: string,
+  password: string,
+  publicKeyB64: string,     // 公開鍵のみ！秘密鍵は渡さないこと
+): Promise&lt;NormalizedRegisterResult&gt; {
+  logRegisterAttempt(email)
+
+  try {
+    // バックエンドが期待するフィールド名（snake_case）に変換
+    const raw = await api.post&lt;BackendRegisterResponse&gt;(&#x27;auth/register&#x27;, {
+      json: {
+        email,
+        display_name:   displayName,  // camelCase → snake_case
+        password,
+        public_key_b64: publicKeyB64, // フロントの publicKeyKyberB64 → backend の public_key_b64
+        key_type:       &#x27;kyber768&#x27;,   // 固定値: ML-KEM-768
+      },
+    })
+
+    const result: NormalizedRegisterResult = {
+      userId:         raw.user_id,
+      keyFingerprint: raw.key_fingerprint,
+    }
+
+    logRegisterSuccess(result.userId, email)
+    return result
+
+  } catch (error) {
+    const message = error instanceof ApiError
+      ? toUserFacingMessage(error)
+      : &#x27;登録中にエラーが発生しました&#x27;
+
+    logRegisterFailure(email, error instanceof ApiError ? error.problem.type : &#x27;unknown&#x27;)
+
+    throw new Error(message)
+  }
+}
+
+/**
+ * TOTP 二要素認証（ダウンロードフロー用）
+ * POST /api/v1/auth/totp/verify
+ *
+ * @param urlToken  - ワンタイムURLトークン
+ * @param email     - 受信者メールアドレス（本人確認用）
+ * @param otp       - 6桁 TOTP コード
+ * @returns         NormalizedTotpResult
+ * @throws          TotpError（remainingAttempts / isLocked 付き）
+ */
+
+export interface TotpError extends Error {
+  remainingAttempts?: number
+  isLocked: boolean
+  statusCode: number
+}
+
+export async function verifyTotp(
+  urlToken: string,
+  email: string,
+  otp: string,
+): Promise&lt;NormalizedTotpResult&gt; {
+  logSecurityEvent(&#x27;TOTP_ATTEMPT&#x27;, &#x27;INFO&#x27;, undefined, undefined, email)
+
+  try {
+    // NOTE: バックエンドのフィールド名は `otp`（types/api.ts の totp_code とは異なる）
+    const raw = await api.post&lt;BackendTotpVerifyResponse&gt;(&#x27;auth/totp/verify&#x27;, {
+      json: {
+        url_token: urlToken,
+        email,
+        otp,          // backend validator: otp (not otp_code, not totp_code)
+      },
+    })
+
+    logSecurityEvent(&#x27;TOTP_SUCCESS&#x27;, &#x27;INFO&#x27;, undefined, undefined, email)
+
+    return {
+      authToken: raw.auth_token,
+      expiresIn: raw.expires_in,
+    }
+
+  } catch (error) {
+    if (error instanceof ApiError) {
+      const remaining = (error.problem as Record&lt;string, unknown&gt;).remaining_attempts as number | undefined
+      const isLocked  = error.status === 423
+
+      if (isLocked) {
+        logSecurityEvent(&#x27;TOTP_LOCKED&#x27;, &#x27;CRITICAL&#x27;)
+      } else {
+        logSecurityEvent(&#x27;TOTP_FAILURE&#x27;, &#x27;WARN&#x27;, { remainingAttempts: remaining })
+      }
+
+      const totpError = Object.assign(
+        new Error(toUserFacingMessage(error)),
+        {
+          remainingAttempts: remaining,
+          isLocked,
+          statusCode: error.status,
+        },
+      ) as TotpError
+
+      throw totpError
+    }
+
+    throw new Error(&#x27;TOTP 認証中にエラーが発生しました&#x27;)
+  }
+}
+</pre>
+<div class="box ok"><div class="bt">✅ STEP 4 完了確認</div><p>src/services/authService.ts が作成されれば OK。</p></div>
+
+<hr class="pb">
+
+<!-- STEP 5: authStore -->
+<h1 class="s" id="step5">STEP 5 — src/stores/authStore.ts 上書き更新 <span class="tag-f">F-12</span></h1>
+<div class="step info">
+  <div class="sn"><div class="sl">STEP</div><div class="sv">5</div></div>
+  <div class="sb">
+    <div class="st">authStore.ts を完全に上書きする（Phase 0 の雛形から置き換え）</div>
+    <div class="ss">追加点: tokenExpiresAt / isTokenExpiringSoon / checkTokenExpiry()</div>
+  </div>
+</div>
+<div class="file-card">
+  <div class="fc-head">
+    <span class="fc-path">src/stores/authStore.ts</span>
+    <span class="fc-badge upd">🔄 上書き更新</span>
+  </div>
+  <div class="fc-body"><p class="fc-desc">Phase 0 の雛形から完全置き換え。setAuth に expiresIn 引数を追加し、トークン有効期限の自動管理と30分前警告を実装する。</p></div>
+</div>
+<div class="box warn"><div class="bt">⚠️ 上書き確認</div><p>既存ファイルを完全に置き換えます。必要であれば事前に <code>cp src/stores/authStore.ts src/stores/authStore.ts.bak</code> でバックアップしてください。</p></div>
+<div class="clbl">frontend/src/stores/authStore.ts — 完全なファイル内容（上書き）</div>
+<pre>// =============================================================
+// ZeroSend — stores/authStore.ts
+//
+// パス        : frontend/src/stores/authStore.ts
+// 作成日      : 2026-02-23
+// 更新日      : 2026-02-23
+//
+// 概要        : JWT アクセストークン・ユーザー情報管理 Zustand ストア
+//
+// セキュリティ設計:
+//   [XSS対策]   access_token はメモリ保持のみ（localStorage・sessionStorage 不使用）
+//   [期限管理]  tokenExpiresAt で有効期限追跡 → 自動ログアウト
+//   [警告通知]  有効期限 30分前に isTokenExpiringSoon = true
+//
+// State:
+//   accessToken        string | null    JWT Bearer トークン（メモリのみ）
+//   tokenExpiresAt     number | null    有効期限 Unix ミリ秒
+//   isTokenExpiringSoon boolean         有効期限まで30分以内
+//   user               AuthUser | null  ログイン中ユーザー情報
+//   isAuthenticated    boolean          認証状態フラグ
+//
+// Actions:
+//   setAuth(token, user, expiresIn)  ログイン成功時に呼ぶ
+//   logout()                         トークン・ユーザー情報をクリア
+//   getToken()                       apiClient の beforeRequest から呼ぶ
+//   checkTokenExpiry()               定期チェック用（useTokenExpiryWatch で使用）
+//
+// 依存関係:
+//   zustand       ^5
+//   @/types/api   UserRole
+//   @/lib/securityLogger
+// =============================================================
+
+import { create } from &#x27;zustand&#x27;
+import type { UserRole } from &#x27;@/types/api&#x27;
+import { logForcedLogout, logLogout, logSecurityEvent } from &#x27;@/lib/securityLogger&#x27;
+
+// ─── ユーザー情報型 ───────────────────────────────────────────
+
+export interface AuthUser {
+  id: string
+  email: string
+  displayName: string
+  role: UserRole
+  totpEnabled: boolean
+}
+
+// ─── 有効期限警告しきい値 ──────────────────────────────────────
+
+/** この時間（ミリ秒）を切ったら isTokenExpiringSoon = true */
+const EXPIRY_WARN_THRESHOLD_MS = 30 * 60 * 1000  // 30分
+
+// ─── Store 型定義 ──────────────────────────────────────────────
+
+interface AuthState {
+  // ── State ──
+  accessToken: string | null
+  tokenExpiresAt: number | null        // Unix ミリ秒 (null = 未設定)
+  isTokenExpiringSoon: boolean         // 30分以内に期限切れ
+  user: AuthUser | null
+  isAuthenticated: boolean
+
+  // ── Actions ──
+
+  /**
+   * ログイン成功時に呼ぶ
+   * @param token     JWT アクセストークン
+   * @param user      ユーザー情報
+   * @param expiresIn トークン有効期間（秒）
+   */
+  setAuth: (token: string, user: AuthUser, expiresIn: number) =&gt; void
+
+  /**
+   * ログアウト処理（通常・強制共用）
+   * @param reason  省略時は通常ログアウト
+   */
+  logout: (reason?: &#x27;token_expired&#x27; | &#x27;unauthorized_401&#x27;) =&gt; void
+
+  /**
+   * apiClient の beforeRequest フックから呼ぶ
+   * トークン期限切れ時は null を返して 401 を誘発させる
+   */
+  getToken: () =&gt; string | null
+
+  /**
+   * トークン有効期限チェック
+   * useTokenExpiryWatch フックが定期的に呼ぶ
+   * 期限切れ検出時は自動ログアウト
+   */
+  checkTokenExpiry: () =&gt; void
+}
+
+// ─── Store 実装 ──────────────────────────────────────────────
+
+export const useAuthStore = create&lt;AuthState&gt;()((set, get) =&gt; ({
+  // ── 初期 State ──
+  accessToken:         null,
+  tokenExpiresAt:      null,
+  isTokenExpiringSoon: false,
+  user:                null,
+  isAuthenticated:     false,
+
+  // ── setAuth ──
+  setAuth: (token, user, expiresIn) =&gt; {
+    const now = Date.now()
+    const tokenExpiresAt = now + expiresIn * 1000
+    const isTokenExpiringSoon = tokenExpiresAt - now &lt; EXPIRY_WARN_THRESHOLD_MS
+
+    if (isTokenExpiringSoon) {
+      logSecurityEvent(
+        &#x27;TOKEN_NEAR_EXPIRY&#x27;,
+        &#x27;WARN&#x27;,
+        { remainingMs: tokenExpiresAt - now },
+        user.id,
+      )
+    }
+
+    set({
+      accessToken: token,
+      tokenExpiresAt,
+      isTokenExpiringSoon,
+      user,
+      isAuthenticated: true,
+    })
+  },
+
+  // ── logout ──
+  logout: (reason) =&gt; {
+    const { user } = get()
+
+    if (reason === &#x27;token_expired&#x27; || reason === &#x27;unauthorized_401&#x27;) {
+      logForcedLogout(reason)
+    } else if (user) {
+      logLogout(user.id)
+    }
+
+    set({
+      accessToken:         null,
+      tokenExpiresAt:      null,
+      isTokenExpiringSoon: false,
+      user:                null,
+      isAuthenticated:     false,
+    })
+  },
+
+  // ── getToken ──
+  getToken: () =&gt; {
+    const { accessToken, tokenExpiresAt } = get()
+
+    if (!accessToken) return null
+
+    // 期限切れトークンは返さない（apiClient に null を返して 401 を誘発）
+    if (tokenExpiresAt !== null &amp;&amp; Date.now() &gt;= tokenExpiresAt) {
+      logSecurityEvent(&#x27;TOKEN_EXPIRED&#x27;, &#x27;WARN&#x27;)
+      // logout は checkTokenExpiry に任せる（ここで呼ぶとループになる可能性）
+      return null
+    }
+
+    return accessToken
+  },
+
+  // ── checkTokenExpiry ──
+  checkTokenExpiry: () =&gt; {
+    const { accessToken, tokenExpiresAt, user, isAuthenticated } = get()
+
+    if (!isAuthenticated || !accessToken || tokenExpiresAt === null) return
+
+    const now = Date.now()
+    const remainingMs = tokenExpiresAt - now
+
+    if (remainingMs &lt;= 0) {
+      // 期限切れ → 強制ログアウト
+      logSecurityEvent(&#x27;TOKEN_EXPIRED&#x27;, &#x27;ERROR&#x27;, undefined, user?.id)
+      get().logout(&#x27;token_expired&#x27;)
+      return
+    }
+
+    // 警告しきい値チェック
+    const shouldWarn = remainingMs &lt; EXPIRY_WARN_THRESHOLD_MS
+    const { isTokenExpiringSoon } = get()
+
+    if (shouldWarn &amp;&amp; !isTokenExpiringSoon) {
+      logSecurityEvent(
+        &#x27;TOKEN_NEAR_EXPIRY&#x27;,
+        &#x27;WARN&#x27;,
+        { remainingMinutes: Math.floor(remainingMs / 60_000) },
+        user?.id,
+      )
+      set({ isTokenExpiringSoon: true })
+    }
+  },
+}))
+</pre>
+<div class="box ok"><div class="bt">✅ STEP 5 完了確認</div><p>src/stores/authStore.ts が更新されれば OK。</p></div>
+
+<hr class="pb">
+
+<!-- STEP 6: LoginPage -->
+<h1 class="s" id="step6">STEP 6 — src/pages/LoginPage.tsx 上書き更新 <span class="tag-f">F-11</span><span class="tag-f">F-12</span></h1>
+<div class="step todo">
+  <div class="sn"><div class="sl">STEP</div><div class="sv">6</div></div>
+  <div class="sb">
+    <div class="st">LoginPage.tsx を完全に上書きする</div>
+    <div class="ss">useTokenExpiryWatch フックも同ファイルに含む。App.tsx からインポートして使う</div>
+  </div>
+</div>
+<div class="file-card">
+  <div class="fc-head">
+    <span class="fc-path">src/pages/LoginPage.tsx</span>
+    <span class="fc-badge upd">🔄 上書き更新</span>
+  </div>
+  <div class="fc-body"><p class="fc-desc">F-11: ZeroSend ロゴ + Quantum-Safe バッジ + メール/パスワードフォーム UI。<br>F-12: useTokenExpiryWatch フックを export — App.tsx の AppShell から呼び出し60秒ごとにトークン有効期限チェック。</p></div>
+</div>
+<div class="clbl">frontend/src/pages/LoginPage.tsx — 完全なファイル内容（上書き）</div>
+<pre>// =============================================================
+// ZeroSend — pages/LoginPage.tsx
+//
+// パス        : frontend/src/pages/LoginPage.tsx
+// 作成日      : 2026-02-23
+// 更新日      : 2026-02-23
+//
+// 概要        : F-11 ログイン画面 UI / F-12 JWT 取得・ストア管理
+//               ワイヤーフレーム準拠デザイン
+//               ZeroSend ロゴ + Quantum-Safe バッジ表示
+//
+// セキュリティ設計:
+//   - 既認証済みの場合は / へリダイレクト（ログイン画面へのアクセス防止）
+//   - パスワードフィールドは autocomplete=&quot;current-password&quot;
+//   - エラーメッセージはユーザーフレンドリーな表示のみ（詳細隠蔽）
+//   - ログイン成功後 setAuth() にて expiresIn を渡し有効期限管理を開始
+//   - トークン有効期限監視は useTokenExpiryWatch カスタムフックで実装 (F-12)
+//
+// 依存関係:
+//   react-router-dom     ^7   useNavigate / Link / Navigate
+//   @/services/authService    loginUser
+//   @/stores/authStore        useAuthStore (setAuth / isAuthenticated)
+// =============================================================
+
+import { useState, useEffect, useRef, useCallback } from &#x27;react&#x27;
+import { useNavigate, Link, Navigate } from &#x27;react-router-dom&#x27;
+import { loginUser } from &#x27;@/services/authService&#x27;
+import { useAuthStore } from &#x27;@/stores/authStore&#x27;
+
+// ─── トークン有効期限監視フック (F-12) ───────────────────────
+
+/**
+ * JWT有効期限の定期チェックフック
+ * ログイン状態の全画面で使用（App.tsx に配置を推奨）
+ * 期限切れ検出時 → authStore.checkTokenExpiry() → 自動ログアウト
+ *
+ * @example
+ * // App.tsx 内で呼ぶ
+ * useTokenExpiryWatch()
+ */
+export function useTokenExpiryWatch(intervalMs: number = 60_000): void {
+  const checkTokenExpiry = useAuthStore(s =&gt; s.checkTokenExpiry)
+  const isAuthenticated  = useAuthStore(s =&gt; s.isAuthenticated)
+
+  useEffect(() =&gt; {
+    if (!isAuthenticated) return
+
+    // 即時1回チェック
+    checkTokenExpiry()
+
+    const timer = setInterval(checkTokenExpiry, intervalMs)
+    return () =&gt; clearInterval(timer)
+  }, [isAuthenticated, checkTokenExpiry, intervalMs])
+}
+
+// ─── LoginPage コンポーネント ────────────────────────────────
+
+export function LoginPage() {
+  const navigate        = useNavigate()
+  const isAuthenticated = useAuthStore(s =&gt; s.isAuthenticated)
+  const setAuth         = useAuthStore(s =&gt; s.setAuth)
+
+  const [email,       setEmail]       = useState(&#x27;&#x27;)
+  const [password,    setPassword]    = useState(&#x27;&#x27;)
+  const [error,       setError]       = useState&lt;string | null&gt;(null)
+  const [isLoading,   setIsLoading]   = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+
+  const emailRef = useRef&lt;HTMLInputElement&gt;(null)
+
+  // マウント時にメールフィールドへフォーカス
+  useEffect(() =&gt; {
+    emailRef.current?.focus()
+  }, [])
+
+  // 既にログイン済みならトップへ
+  if (isAuthenticated) {
+    return &lt;Navigate to=&quot;/&quot; replace /&gt;
+  }
+
+  // ── フォーム送信 ──
+  const handleSubmit = useCallback(async (e: React.FormEvent) =&gt; {
+    e.preventDefault()
+    setError(null)
+
+    // クライアントサイドバリデーション
+    const trimmedEmail = email.trim().toLowerCase()
+    if (!trimmedEmail || !password) {
+      setError(&#x27;メールアドレスとパスワードを入力してください&#x27;)
+      return
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(trimmedEmail)) {
+      setError(&#x27;有効なメールアドレスを入力してください&#x27;)
+      return
+    }
+    if (password.length &lt; 8) {
+      setError(&#x27;パスワードは8文字以上です&#x27;)
+      return
+    }
+
+    setIsLoading(true)
+
+    try {
+      const result = await loginUser(trimmedEmail, password)
+
+      // F-12: setAuth に expiresIn を渡してトークン有効期限管理を開始
+      setAuth(result.accessToken, result.user, result.expiresIn)
+
+      navigate(&#x27;/&#x27;, { replace: true })
+
+    } catch (err) {
+      setError(err instanceof Error ? err.message : &#x27;ログインに失敗しました&#x27;)
+      // セキュリティ: エラー時はパスワードフィールドをクリア
+      setPassword(&#x27;&#x27;)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [email, password, setAuth, navigate])
+
+  // ── レンダリング ──
+  return (
+    &lt;div className=&quot;min-h-screen bg-gray-950 flex items-center justify-center px-4&quot;&gt;
+
+      {/* 背景グリッドパターン */}
+      &lt;div
+        className=&quot;absolute inset-0 opacity-[0.03]&quot;
+        style={{
+          backgroundImage: `linear-gradient(rgba(99,102,241,0.5) 1px, transparent 1px),
+                            linear-gradient(90deg, rgba(99,102,241,0.5) 1px, transparent 1px)`,
+          backgroundSize: &#x27;40px 40px&#x27;,
+        }}
+      /&gt;
+
+      &lt;div className=&quot;relative w-full max-w-md&quot;&gt;
+
+        {/* ─── ロゴ + バッジ ─── */}
+        &lt;div className=&quot;text-center mb-8&quot;&gt;
+          &lt;div className=&quot;inline-flex items-center gap-3 mb-3&quot;&gt;
+            &lt;div className=&quot;w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-900/50&quot;&gt;
+              &lt;svg className=&quot;w-5 h-5 text-white&quot; fill=&quot;none&quot; viewBox=&quot;0 0 24 24&quot; stroke=&quot;currentColor&quot; strokeWidth={2}&gt;
+                &lt;path strokeLinecap=&quot;round&quot; strokeLinejoin=&quot;round&quot;
+                  d=&quot;M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z&quot; /&gt;
+              &lt;/svg&gt;
+            &lt;/div&gt;
+            &lt;span className=&quot;text-2xl font-bold text-white tracking-tight&quot;&gt;ZeroSend&lt;/span&gt;
+          &lt;/div&gt;
+
+          &lt;p className=&quot;text-gray-400 text-sm mb-3&quot;&gt;量子耐性ファイル転送システム&lt;/p&gt;
+
+          {/* Quantum-Safe バッジ */}
+          &lt;div className=&quot;inline-flex items-center gap-2 px-3 py-1.5 bg-emerald-950 border border-emerald-800 rounded-full&quot;&gt;
+            &lt;span className=&quot;w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse&quot; /&gt;
+            &lt;span className=&quot;text-emerald-400 text-xs font-mono font-semibold tracking-wide&quot;&gt;
+              ML-KEM-768 / Quantum-Safe
+            &lt;/span&gt;
+          &lt;/div&gt;
+        &lt;/div&gt;
+
+        {/* ─── ログインカード ─── */}
+        &lt;div className=&quot;bg-gray-900 border border-gray-800 rounded-2xl p-8 shadow-2xl&quot;&gt;
+          &lt;h1 className=&quot;text-lg font-semibold text-white mb-6&quot;&gt;ログイン&lt;/h1&gt;
+
+          &lt;form onSubmit={handleSubmit} noValidate&gt;
+
+            {/* メールアドレス */}
+            &lt;div className=&quot;mb-4&quot;&gt;
+              &lt;label htmlFor=&quot;email&quot; className=&quot;block text-sm font-medium text-gray-300 mb-1.5&quot;&gt;
+                メールアドレス
+              &lt;/label&gt;
+              &lt;input
+                id=&quot;email&quot;
+                ref={emailRef}
+                type=&quot;email&quot;
+                autoComplete=&quot;email&quot;
+                inputMode=&quot;email&quot;
+                required
+                value={email}
+                onChange={e =&gt; { setEmail(e.target.value); setError(null) }}
+                disabled={isLoading}
+                placeholder=&quot;you@example.com&quot;
+                className={`
+                  w-full px-3.5 py-2.5 bg-gray-800 border rounded-lg text-white text-sm
+                  placeholder-gray-500 transition-colors duration-150 outline-none
+                  focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50
+                  disabled:opacity-50 disabled:cursor-not-allowed
+                  ${error ? &#x27;border-red-700&#x27; : &#x27;border-gray-700&#x27;}
+                `}
+              /&gt;
+            &lt;/div&gt;
+
+            {/* パスワード */}
+            &lt;div className=&quot;mb-6&quot;&gt;
+              &lt;label htmlFor=&quot;password&quot; className=&quot;block text-sm font-medium text-gray-300 mb-1.5&quot;&gt;
+                パスワード
+              &lt;/label&gt;
+              &lt;div className=&quot;relative&quot;&gt;
+                &lt;input
+                  id=&quot;password&quot;
+                  type={showPassword ? &#x27;text&#x27; : &#x27;password&#x27;}
+                  autoComplete=&quot;current-password&quot;
+                  required
+                  value={password}
+                  onChange={e =&gt; { setPassword(e.target.value); setError(null) }}
+                  disabled={isLoading}
+                  placeholder=&quot;••••••••&quot;
+                  className={`
+                    w-full px-3.5 py-2.5 pr-10 bg-gray-800 border rounded-lg text-white text-sm
+                    placeholder-gray-500 transition-colors duration-150 outline-none
+                    focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50
+                    disabled:opacity-50 disabled:cursor-not-allowed
+                    ${error ? &#x27;border-red-700&#x27; : &#x27;border-gray-700&#x27;}
+                  `}
+                /&gt;
+                {/* パスワード表示切り替え */}
+                &lt;button
+                  type=&quot;button&quot;
+                  onClick={() =&gt; setShowPassword(v =&gt; !v)}
+                  tabIndex={-1}
+                  className=&quot;absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200 transition-colors&quot;
+                  aria-label={showPassword ? &#x27;パスワードを隠す&#x27; : &#x27;パスワードを表示&#x27;}
+                &gt;
+                  {showPassword ? (
+                    &lt;svg className=&quot;w-4 h-4&quot; fill=&quot;none&quot; viewBox=&quot;0 0 24 24&quot; stroke=&quot;currentColor&quot; strokeWidth={2}&gt;
+                      &lt;path strokeLinecap=&quot;round&quot; strokeLinejoin=&quot;round&quot;
+                        d=&quot;M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21&quot; /&gt;
+                    &lt;/svg&gt;
+                  ) : (
+                    &lt;svg className=&quot;w-4 h-4&quot; fill=&quot;none&quot; viewBox=&quot;0 0 24 24&quot; stroke=&quot;currentColor&quot; strokeWidth={2}&gt;
+                      &lt;path strokeLinecap=&quot;round&quot; strokeLinejoin=&quot;round&quot;
+                        d=&quot;M15 12a3 3 0 11-6 0 3 3 0 016 0z&quot; /&gt;
+                      &lt;path strokeLinecap=&quot;round&quot; strokeLinejoin=&quot;round&quot;
+                        d=&quot;M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z&quot; /&gt;
+                    &lt;/svg&gt;
+                  )}
+                &lt;/button&gt;
+              &lt;/div&gt;
+            &lt;/div&gt;
+
+            {/* エラーメッセージ */}
+            {error &amp;&amp; (
+              &lt;div
+                role=&quot;alert&quot;
+                className=&quot;mb-4 flex items-start gap-2.5 px-3.5 py-2.5 bg-red-950/60 border border-red-800 rounded-lg&quot;
+              &gt;
+                &lt;svg className=&quot;w-4 h-4 text-red-400 mt-0.5 shrink-0&quot; fill=&quot;none&quot; viewBox=&quot;0 0 24 24&quot; stroke=&quot;currentColor&quot; strokeWidth={2}&gt;
+                  &lt;path strokeLinecap=&quot;round&quot; strokeLinejoin=&quot;round&quot;
+                    d=&quot;M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z&quot; /&gt;
+                &lt;/svg&gt;
+                &lt;span className=&quot;text-red-300 text-sm&quot;&gt;{error}&lt;/span&gt;
+              &lt;/div&gt;
+            )}
+
+            {/* ログインボタン */}
+            &lt;button
+              type=&quot;submit&quot;
+              disabled={isLoading}
+              className=&quot;
+                w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 disabled:bg-indigo-800
+                text-white font-semibold text-sm rounded-lg transition-colors duration-150
+                disabled:cursor-not-allowed flex items-center justify-center gap-2
+                focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-900
+              &quot;
+            &gt;
+              {isLoading ? (
+                &lt;&gt;
+                  &lt;svg className=&quot;w-4 h-4 animate-spin&quot; fill=&quot;none&quot; viewBox=&quot;0 0 24 24&quot;&gt;
+                    &lt;circle className=&quot;opacity-25&quot; cx=&quot;12&quot; cy=&quot;12&quot; r=&quot;10&quot; stroke=&quot;currentColor&quot; strokeWidth=&quot;4&quot; /&gt;
+                    &lt;path className=&quot;opacity-75&quot; fill=&quot;currentColor&quot; d=&quot;M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z&quot; /&gt;
+                  &lt;/svg&gt;
+                  &lt;span&gt;認証中...&lt;/span&gt;
+                &lt;/&gt;
+              ) : &#x27;ログイン&#x27;}
+            &lt;/button&gt;
+          &lt;/form&gt;
+
+          {/* 登録リンク */}
+          &lt;p className=&quot;mt-6 text-center text-sm text-gray-500&quot;&gt;
+            アカウントをお持ちでない方は{&#x27; &#x27;}
+            &lt;Link
+              to=&quot;/register&quot;
+              className=&quot;text-indigo-400 hover:text-indigo-300 transition-colors font-medium&quot;
+            &gt;
+              新規登録
+            &lt;/Link&gt;
+          &lt;/p&gt;
+        &lt;/div&gt;
+
+        {/* フッター注記 */}
+        &lt;p className=&quot;mt-4 text-center text-xs text-gray-600&quot;&gt;
+          ZeroSend — NIST FIPS 203 ML-KEM-768 · AES-256-GCM
+        &lt;/p&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  )
+}
+</pre>
+<div class="box ok"><div class="bt">✅ STEP 6 完了確認</div><p>src/pages/LoginPage.tsx が更新されれば OK。</p></div>
+
+<hr class="pb">
+
+<!-- STEP 7: RegisterPage -->
+<h1 class="s" id="step7">STEP 7 — src/pages/RegisterPage.tsx 新規作成 <span class="tag-f">F-13（核心）</span></h1>
+<div class="step sec-step">
+  <div class="sn"><div class="sl">STEP</div><div class="sv">7</div></div>
+  <div class="sb">
+    <div class="st">🔐 RegisterPage.tsx を新規作成する（ML-KEM-768 鍵ペア生成の核心実装）</div>
+    <div class="ss">秘密鍵のセキュリティ処理が最重要。secretKey を React state に長期保持しないこと</div>
+  </div>
+</div>
+<div class="file-card">
+  <div class="fc-head">
+    <span class="fc-path">src/pages/RegisterPage.tsx</span>
+    <span class="fc-badge new sec">🆕 新規作成 🔐 最重要</span>
+  </div>
+  <div class="fc-body"><p class="fc-desc">ML-KEM-768 鍵ペアをブラウザ内で生成し、秘密鍵を IndexedDB のみに保存、公開鍵のみをサーバーに送信するユーザー登録画面。</p></div>
+</div>
+<div class="security-critical">
+  <div class="sc-title">🔐 鍵ペア処理フロー（必ず守ること）</div>
+  <ul>
+    <li><strong>① 鍵生成:</strong> ml_kem768.keygen() → 内部で crypto.getRandomValues()（CSPRNG）使用</li>
+    <li><strong>② 秘密鍵:</strong> secretKeyRef.current（useRef）に一時保持。useState への長期保持はしない</li>
+    <li><strong>③ IndexedDB 保存:</strong> storePrivateKey(userId, secretKey) → 保存完了後すぐに参照をクリア</li>
+    <li><strong>④ サーバー送信:</strong> registerUser(..., publicKeyB64) → 公開鍵のみ。secretKey 引数は存在しない</li>
+    <li><strong>⑤ クリーンアップ:</strong> 登録完了後 secretKeyRef.current = null → GC に任せる</li>
+  </ul>
+</div>
+<div class="clbl">frontend/src/pages/RegisterPage.tsx — 完全なファイル内容</div>
+<pre>// =============================================================
+// ZeroSend — pages/RegisterPage.tsx
+//
+// パス        : frontend/src/pages/RegisterPage.tsx
+// 作成日      : 2026-02-23
+// 更新日      : 2026-02-23
+//
+// 概要        : F-13 ユーザー登録画面 + ML-KEM-768 鍵ペア生成
+//               @noble/post-quantum の ml_kem768.keygen() を使用
+//               秘密鍵は IndexedDB にのみ保存（サーバーには絶対に送らない）
+//               公開鍵のみ POST /auth/register で送信
+//
+// セキュリティ設計（最重要）:
+//   [鍵生成]   ml_kem768.keygen() は内部で crypto.getRandomValues() を使用（CSPRNG）
+//   [秘密鍵]   Uint8Array のまま IndexedDB に保存。React state では一時保持のみ
+//   [クリーンアップ] 登録完了後に React state から秘密鍵参照を削除
+//   [公開鍵のみ送信] registerUser() は publicKeyB64 のみ受け取る（秘密鍵引数なし）
+//   [フィンガープリント] Web Crypto API SHA-256 で公開鍵を表示（内容確認用）
+//
+// 依存関係:
+//   @noble/post-quantum/ml-kem   ml_kem768.keygen()
+//   react-router-dom              Navigate / useNavigate / Link
+//   @/services/authService        registerUser()
+//   @/lib/keyStorage              storePrivateKey()
+//   @/lib/securityLogger          logKeyPairGenerated()
+//   @/stores/authStore            isAuthenticated
+// =============================================================
+
+import { useState, useEffect, useCallback, useRef } from &#x27;react&#x27;
+import { useNavigate, Link, Navigate } from &#x27;react-router-dom&#x27;
+import { ml_kem768 } from &#x27;@noble/post-quantum/ml-kem&#x27;
+import { registerUser } from &#x27;@/services/authService&#x27;
+import { storePrivateKey } from &#x27;@/lib/keyStorage&#x27;
+import { logSecurityEvent, logKeyPairGenerated } from &#x27;@/lib/securityLogger&#x27;
+import { useAuthStore } from &#x27;@/stores/authStore&#x27;
+
+// ─── ユーティリティ: Uint8Array → Base64 ──────────────────────
+
+/**
+ * Uint8Array を Base64 文字列に変換
+ * btoa + String.fromCharCode を使用（ブラウザ標準 API）
+ */
+function uint8ArrayToBase64(bytes: Uint8Array): string {
+  let binary = &#x27;&#x27;
+  const len = bytes.byteLength
+  for (let i = 0; i &lt; len; i++) {
+    binary += String.fromCharCode(bytes[i])
+  }
+  return btoa(binary)
+}
+
+// ─── ユーティリティ: 公開鍵フィンガープリント生成 ──────────────
+
+/**
+ * 公開鍵の SHA-256 フィンガープリントを生成
+ * Web Crypto API 使用（ブラウザ標準）
+ * 表示形式: &quot;ab:cd:ef:12:34:56&quot; (先頭6バイト)
+ *
+ * NOTE: SHA3-256 を使用したい場合は @noble/hashes/sha3 を追加すること
+ *       現時点は Web Crypto の SHA-256 で代替（表示目的のため十分）
+ */
+async function computePublicKeyFingerprint(publicKey: Uint8Array): Promise&lt;string&gt; {
+  const hashBuffer = await crypto.subtle.digest(&#x27;SHA-256&#x27;, publicKey)
+  const hashArray  = Array.from(new Uint8Array(hashBuffer))
+  // 先頭8バイトを &quot;XX:XX:XX:XX:XX:XX:XX:XX&quot; 形式で表示
+  return hashArray
+    .slice(0, 8)
+    .map(b =&gt; b.toString(16).padStart(2, &#x27;0&#x27;))
+    .join(&#x27;:&#x27;)
+}
+
+// ─── 鍵ペア生成状態 ───────────────────────────────────────────
+
+type KeyGenStatus = &#x27;idle&#x27; | &#x27;generating&#x27; | &#x27;ready&#x27; | &#x27;error&#x27;
+
+interface GeneratedKeypair {
+  publicKeyB64: string      // サーバー送信用（安全）
+  secretKey: Uint8Array     // IndexedDB 保存用（絶対にサーバーに送らない）
+  fingerprint: string       // UI 表示用フィンガープリント
+}
+
+// ─── RegisterPage コンポーネント ──────────────────────────────
+
+export function RegisterPage() {
+  const navigate        = useNavigate()
+  const isAuthenticated = useAuthStore(s =&gt; s.isAuthenticated)
+
+  // フォーム状態
+  const [email,          setEmail]          = useState(&#x27;&#x27;)
+  const [displayName,    setDisplayName]    = useState(&#x27;&#x27;)
+  const [password,       setPassword]       = useState(&#x27;&#x27;)
+  const [confirmPw,      setConfirmPw]      = useState(&#x27;&#x27;)
+  const [showPassword,   setShowPassword]   = useState(false)
+
+  // 鍵ペア状態
+  const [keyGenStatus,   setKeyGenStatus]   = useState&lt;KeyGenStatus&gt;(&#x27;idle&#x27;)
+  const [keypair,        setKeypair]        = useState&lt;GeneratedKeypair | null&gt;(null)
+
+  // 送信状態
+  const [isSubmitting,   setIsSubmitting]   = useState(false)
+  const [error,          setError]          = useState&lt;string | null&gt;(null)
+  const [success,        setSuccess]        = useState(false)
+
+  // 登録完了後に一時保持した秘密鍵をクリアするための ref
+  const secretKeyRef = useRef&lt;Uint8Array | null&gt;(null)
+
+  // 既認証済みならトップへ
+  if (isAuthenticated) {
+    return &lt;Navigate to=&quot;/&quot; replace /&gt;
+  }
+
+  // ── 鍵ペア生成 ──
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const generateKeypair = useCallback(async () =&gt; {
+    setKeyGenStatus(&#x27;generating&#x27;)
+    setKeypair(null)
+
+    try {
+      logSecurityEvent(&#x27;KEY_PAIR_GENERATE_START&#x27;, &#x27;INFO&#x27;)
+
+      // ML-KEM-768 鍵ペア生成
+      // @noble/post-quantum は内部で crypto.getRandomValues() を使用（CSPRNG準拠）
+      const { publicKey, secretKey } = ml_kem768.keygen()
+
+      const publicKeyB64  = uint8ArrayToBase64(publicKey)
+      const fingerprint   = await computePublicKeyFingerprint(publicKey)
+
+      // 秘密鍵は ref にも保持（submit 時の IndexedDB 保存用）
+      secretKeyRef.current = secretKey
+
+      setKeypair({ publicKeyB64, secretKey, fingerprint })
+      setKeyGenStatus(&#x27;ready&#x27;)
+
+      logSecurityEvent(&#x27;KEY_PAIR_GENERATE_SUCCESS&#x27;, &#x27;INFO&#x27;, {
+        fingerprintPrefix: fingerprint.split(&#x27;:&#x27;).slice(0, 3).join(&#x27;:&#x27;),
+        publicKeyLengthBytes: publicKey.byteLength,
+      })
+
+    } catch (err) {
+      setKeyGenStatus(&#x27;error&#x27;)
+      logSecurityEvent(&#x27;KEY_PAIR_GENERATE_START&#x27;, &#x27;ERROR&#x27;, {
+        error: err instanceof Error ? err.message : &#x27;unknown&#x27;,
+      })
+    }
+  }, [])
+
+  // マウント時に鍵ペア生成開始
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  useEffect(() =&gt; {
+    generateKeypair()
+
+    // クリーンアップ: アンマウント時に秘密鍵参照をクリア
+    return () =&gt; {
+      secretKeyRef.current = null
+    }
+  }, [generateKeypair])
+
+  // ── パスワード強度チェック ──
+  const passwordStrength = getPasswordStrength(password)
+
+  // ── フォーム送信 ──
+  const handleSubmit = useCallback(async (e: React.FormEvent) =&gt; {
+    e.preventDefault()
+    setError(null)
+
+    // バリデーション
+    const trimmedEmail = email.trim().toLowerCase()
+    const trimmedName  = displayName.trim()
+
+    if (!trimmedEmail || !trimmedName || !password || !confirmPw) {
+      setError(&#x27;すべての項目を入力してください&#x27;)
+      return
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(trimmedEmail)) {
+      setError(&#x27;有効なメールアドレスを入力してください&#x27;)
+      return
+    }
+    if (password !== confirmPw) {
+      setError(&#x27;パスワードが一致しません&#x27;)
+      return
+    }
+    if (passwordStrength.score &lt; 2) {
+      setError(&#x27;パスワードをより強固にしてください（8文字以上、数字・記号を含む）&#x27;)
+      return
+    }
+    if (!keypair || keyGenStatus !== &#x27;ready&#x27;) {
+      setError(&#x27;鍵ペアの生成が完了していません。しばらく待つか再生成してください&#x27;)
+      return
+    }
+
+    setIsSubmitting(true)
+
+    try {
+      // 1. ユーザー登録 API 呼び出し（公開鍵のみ送信）
+      const result = await registerUser(
+        trimmedEmail,
+        trimmedName,
+        password,
+        keypair.publicKeyB64,  // 公開鍵のみ！秘密鍵は送らない
+      )
+
+      // 2. 秘密鍵を IndexedDB に保存（userId をキーとして使用）
+      //    NOTE: result.userId 取得後に即座に保存する
+      try {
+        logSecurityEvent(&#x27;KEY_PAIR_STORE_SUCCESS&#x27;, &#x27;INFO&#x27;, undefined, result.userId)
+        await storePrivateKey(result.userId, keypair.secretKey)
+        logKeyPairGenerated(result.userId, keypair.fingerprint.split(&#x27;:&#x27;).slice(0, 3).join(&#x27;:&#x27;))
+      } catch (storeErr) {
+        // IndexedDB 保存失敗は致命的エラー（復号不能になる）
+        logSecurityEvent(&#x27;KEY_PAIR_STORE_FAILURE&#x27;, &#x27;CRITICAL&#x27;, {
+          userId: result.userId,
+          error: storeErr instanceof Error ? storeErr.message : &#x27;unknown&#x27;,
+        })
+        throw new Error(
+          &#x27;暗号鍵の保存に失敗しました。このデバイスでファイルを受信できなくなります。&#x27; +
+          &#x27;再登録するか、ブラウザの IndexedDB 設定を確認してください。&#x27;
+        )
+      }
+
+      // 3. React state から秘密鍵参照をクリア（GC に任せる）
+      secretKeyRef.current = null
+      setKeypair(prev =&gt; prev ? { ...prev, secretKey: new Uint8Array(0) } : null)
+
+      setSuccess(true)
+
+      // 3秒後にログイン画面へ
+      setTimeout(() =&gt; navigate(&#x27;/login&#x27;, { replace: true }), 3000)
+
+    } catch (err) {
+      setError(err instanceof Error ? err.message : &#x27;登録中にエラーが発生しました&#x27;)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }, [email, displayName, password, confirmPw, keypair, keyGenStatus,
+      passwordStrength.score, navigate])
+
+  // ── 登録成功画面 ──
+  if (success) {
+    return (
+      &lt;div className=&quot;min-h-screen bg-gray-950 flex items-center justify-center px-4&quot;&gt;
+        &lt;div className=&quot;text-center max-w-sm&quot;&gt;
+          &lt;div className=&quot;w-16 h-16 bg-emerald-900 border border-emerald-700 rounded-full flex items-center justify-center mx-auto mb-4&quot;&gt;
+            &lt;svg className=&quot;w-8 h-8 text-emerald-400&quot; fill=&quot;none&quot; viewBox=&quot;0 0 24 24&quot; stroke=&quot;currentColor&quot; strokeWidth={2}&gt;
+              &lt;path strokeLinecap=&quot;round&quot; strokeLinejoin=&quot;round&quot; d=&quot;M5 13l4 4L19 7&quot; /&gt;
+            &lt;/svg&gt;
+          &lt;/div&gt;
+          &lt;h2 className=&quot;text-xl font-bold text-white mb-2&quot;&gt;登録完了&lt;/h2&gt;
+          &lt;p className=&quot;text-gray-400 text-sm mb-2&quot;&gt;量子耐性鍵ペアがこのデバイスに保存されました&lt;/p&gt;
+          &lt;p className=&quot;text-gray-500 text-xs&quot;&gt;ログイン画面へ移動します...&lt;/p&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+    )
+  }
+
+  // ── メイン登録フォーム ──
+  return (
+    &lt;div className=&quot;min-h-screen bg-gray-950 flex items-center justify-center px-4 py-10&quot;&gt;
+
+      {/* 背景グリッド */}
+      &lt;div
+        className=&quot;absolute inset-0 opacity-[0.03]&quot;
+        style={{
+          backgroundImage: `linear-gradient(rgba(99,102,241,0.5) 1px, transparent 1px),
+                            linear-gradient(90deg, rgba(99,102,241,0.5) 1px, transparent 1px)`,
+          backgroundSize: &#x27;40px 40px&#x27;,
+        }}
+      /&gt;
+
+      &lt;div className=&quot;relative w-full max-w-md&quot;&gt;
+
+        {/* ヘッダー */}
+        &lt;div className=&quot;text-center mb-8&quot;&gt;
+          &lt;div className=&quot;inline-flex items-center gap-3 mb-3&quot;&gt;
+            &lt;div className=&quot;w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-900/50&quot;&gt;
+              &lt;svg className=&quot;w-5 h-5 text-white&quot; fill=&quot;none&quot; viewBox=&quot;0 0 24 24&quot; stroke=&quot;currentColor&quot; strokeWidth={2}&gt;
+                &lt;path strokeLinecap=&quot;round&quot; strokeLinejoin=&quot;round&quot;
+                  d=&quot;M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z&quot; /&gt;
+              &lt;/svg&gt;
+            &lt;/div&gt;
+            &lt;span className=&quot;text-2xl font-bold text-white tracking-tight&quot;&gt;ZeroSend&lt;/span&gt;
+          &lt;/div&gt;
+
+          &lt;div className=&quot;inline-flex items-center gap-2 px-3 py-1.5 bg-emerald-950 border border-emerald-800 rounded-full&quot;&gt;
+            &lt;span className=&quot;w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse&quot; /&gt;
+            &lt;span className=&quot;text-emerald-400 text-xs font-mono font-semibold tracking-wide&quot;&gt;
+              ML-KEM-768 / Quantum-Safe
+            &lt;/span&gt;
+          &lt;/div&gt;
+        &lt;/div&gt;
+
+        {/* 登録カード */}
+        &lt;div className=&quot;bg-gray-900 border border-gray-800 rounded-2xl p-8 shadow-2xl&quot;&gt;
+          &lt;h1 className=&quot;text-lg font-semibold text-white mb-1&quot;&gt;新規アカウント登録&lt;/h1&gt;
+          &lt;p className=&quot;text-gray-500 text-xs mb-6&quot;&gt;量子耐性暗号鍵ペアを自動生成してこのデバイスに保存します&lt;/p&gt;
+
+          {/* 鍵生成ステータスバナー */}
+          &lt;KeyGenStatusBanner
+            status={keyGenStatus}
+            fingerprint={keypair?.fingerprint ?? null}
+            onRetry={generateKeypair}
+          /&gt;
+
+          &lt;form onSubmit={handleSubmit} noValidate className=&quot;mt-5 space-y-4&quot;&gt;
+
+            {/* メールアドレス */}
+            &lt;div&gt;
+              &lt;label htmlFor=&quot;reg-email&quot; className=&quot;block text-sm font-medium text-gray-300 mb-1.5&quot;&gt;
+                メールアドレス
+              &lt;/label&gt;
+              &lt;input
+                id=&quot;reg-email&quot;
+                type=&quot;email&quot;
+                autoComplete=&quot;email&quot;
+                required
+                value={email}
+                onChange={e =&gt; { setEmail(e.target.value); setError(null) }}
+                disabled={isSubmitting}
+                placeholder=&quot;you@example.com&quot;
+                className=&quot;w-full px-3.5 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm
+                  placeholder-gray-500 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50
+                  disabled:opacity-50 transition-colors&quot;
+              /&gt;
+            &lt;/div&gt;
+
+            {/* 表示名 */}
+            &lt;div&gt;
+              &lt;label htmlFor=&quot;reg-name&quot; className=&quot;block text-sm font-medium text-gray-300 mb-1.5&quot;&gt;
+                表示名
+              &lt;/label&gt;
+              &lt;input
+                id=&quot;reg-name&quot;
+                type=&quot;text&quot;
+                autoComplete=&quot;name&quot;
+                required
+                value={displayName}
+                onChange={e =&gt; { setDisplayName(e.target.value); setError(null) }}
+                disabled={isSubmitting}
+                placeholder=&quot;田中 太郎&quot;
+                className=&quot;w-full px-3.5 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm
+                  placeholder-gray-500 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50
+                  disabled:opacity-50 transition-colors&quot;
+              /&gt;
+            &lt;/div&gt;
+
+            {/* パスワード */}
+            &lt;div&gt;
+              &lt;label htmlFor=&quot;reg-password&quot; className=&quot;block text-sm font-medium text-gray-300 mb-1.5&quot;&gt;
+                パスワード
+              &lt;/label&gt;
+              &lt;div className=&quot;relative&quot;&gt;
+                &lt;input
+                  id=&quot;reg-password&quot;
+                  type={showPassword ? &#x27;text&#x27; : &#x27;password&#x27;}
+                  autoComplete=&quot;new-password&quot;
+                  required
+                  value={password}
+                  onChange={e =&gt; { setPassword(e.target.value); setError(null) }}
+                  disabled={isSubmitting}
+                  placeholder=&quot;••••••••&quot;
+                  className=&quot;w-full px-3.5 py-2.5 pr-10 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm
+                    placeholder-gray-500 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50
+                    disabled:opacity-50 transition-colors&quot;
+                /&gt;
+                &lt;button
+                  type=&quot;button&quot;
+                  onClick={() =&gt; setShowPassword(v =&gt; !v)}
+                  tabIndex={-1}
+                  className=&quot;absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200 transition-colors&quot;
+                  aria-label={showPassword ? &#x27;パスワードを隠す&#x27; : &#x27;パスワードを表示&#x27;}
+                &gt;
+                  &lt;svg className=&quot;w-4 h-4&quot; fill=&quot;none&quot; viewBox=&quot;0 0 24 24&quot; stroke=&quot;currentColor&quot; strokeWidth={2}&gt;
+                    &lt;path strokeLinecap=&quot;round&quot; strokeLinejoin=&quot;round&quot;
+                      d={showPassword
+                        ? &quot;M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21&quot;
+                        : &quot;M15 12a3 3 0 11-6 0 3 3 0 016 0zM2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z&quot;
+                      }
+                    /&gt;
+                  &lt;/svg&gt;
+                &lt;/button&gt;
+              &lt;/div&gt;
+
+              {/* パスワード強度バー */}
+              {password.length &gt; 0 &amp;&amp; (
+                &lt;div className=&quot;mt-2&quot;&gt;
+                  &lt;div className=&quot;flex gap-1 mb-1&quot;&gt;
+                    {[0, 1, 2, 3].map(i =&gt; (
+                      &lt;div
+                        key={i}
+                        className={`h-1 flex-1 rounded-full transition-colors ${
+                          i &lt; passwordStrength.score
+                            ? passwordStrength.score &lt;= 1 ? &#x27;bg-red-500&#x27;
+                              : passwordStrength.score &lt;= 2 ? &#x27;bg-yellow-500&#x27;
+                              : passwordStrength.score &lt;= 3 ? &#x27;bg-blue-500&#x27;
+                              : &#x27;bg-emerald-500&#x27;
+                            : &#x27;bg-gray-700&#x27;
+                        }`}
+                      /&gt;
+                    ))}
+                  &lt;/div&gt;
+                  &lt;p className={`text-xs ${
+                    passwordStrength.score &lt;= 1 ? &#x27;text-red-400&#x27;
+                      : passwordStrength.score &lt;= 2 ? &#x27;text-yellow-400&#x27;
+                      : passwordStrength.score &lt;= 3 ? &#x27;text-blue-400&#x27;
+                      : &#x27;text-emerald-400&#x27;
+                  }`}&gt;
+                    {passwordStrength.label}
+                  &lt;/p&gt;
+                &lt;/div&gt;
+              )}
+            &lt;/div&gt;
+
+            {/* パスワード確認 */}
+            &lt;div&gt;
+              &lt;label htmlFor=&quot;reg-confirm&quot; className=&quot;block text-sm font-medium text-gray-300 mb-1.5&quot;&gt;
+                パスワード確認
+              &lt;/label&gt;
+              &lt;input
+                id=&quot;reg-confirm&quot;
+                type={showPassword ? &#x27;text&#x27; : &#x27;password&#x27;}
+                autoComplete=&quot;new-password&quot;
+                required
+                value={confirmPw}
+                onChange={e =&gt; { setConfirmPw(e.target.value); setError(null) }}
+                disabled={isSubmitting}
+                placeholder=&quot;••••••••&quot;
+                className={`w-full px-3.5 py-2.5 bg-gray-800 border rounded-lg text-white text-sm
+                  placeholder-gray-500 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50
+                  disabled:opacity-50 transition-colors ${
+                    confirmPw &amp;&amp; confirmPw !== password ? &#x27;border-red-700&#x27; : &#x27;border-gray-700&#x27;
+                  }`}
+              /&gt;
+              {confirmPw &amp;&amp; confirmPw !== password &amp;&amp; (
+                &lt;p className=&quot;mt-1 text-xs text-red-400&quot;&gt;パスワードが一致しません&lt;/p&gt;
+              )}
+            &lt;/div&gt;
+
+            {/* エラーメッセージ */}
+            {error &amp;&amp; (
+              &lt;div role=&quot;alert&quot; className=&quot;flex items-start gap-2.5 px-3.5 py-2.5 bg-red-950/60 border border-red-800 rounded-lg&quot;&gt;
+                &lt;svg className=&quot;w-4 h-4 text-red-400 mt-0.5 shrink-0&quot; fill=&quot;none&quot; viewBox=&quot;0 0 24 24&quot; stroke=&quot;currentColor&quot; strokeWidth={2}&gt;
+                  &lt;path strokeLinecap=&quot;round&quot; strokeLinejoin=&quot;round&quot;
+                    d=&quot;M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z&quot; /&gt;
+                &lt;/svg&gt;
+                &lt;span className=&quot;text-red-300 text-sm&quot;&gt;{error}&lt;/span&gt;
+              &lt;/div&gt;
+            )}
+
+            {/* 登録ボタン */}
+            &lt;button
+              type=&quot;submit&quot;
+              disabled={isSubmitting || keyGenStatus !== &#x27;ready&#x27;}
+              className=&quot;
+                w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 disabled:bg-indigo-900
+                text-white font-semibold text-sm rounded-lg transition-colors duration-150
+                disabled:cursor-not-allowed flex items-center justify-center gap-2
+                focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-900
+              &quot;
+            &gt;
+              {isSubmitting ? (
+                &lt;&gt;
+                  &lt;svg className=&quot;w-4 h-4 animate-spin&quot; fill=&quot;none&quot; viewBox=&quot;0 0 24 24&quot;&gt;
+                    &lt;circle className=&quot;opacity-25&quot; cx=&quot;12&quot; cy=&quot;12&quot; r=&quot;10&quot; stroke=&quot;currentColor&quot; strokeWidth=&quot;4&quot; /&gt;
+                    &lt;path className=&quot;opacity-75&quot; fill=&quot;currentColor&quot; d=&quot;M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z&quot; /&gt;
+                  &lt;/svg&gt;
+                  &lt;span&gt;登録中...&lt;/span&gt;
+                &lt;/&gt;
+              ) : &#x27;アカウントを作成&#x27;}
+            &lt;/button&gt;
+          &lt;/form&gt;
+
+          &lt;p className=&quot;mt-5 text-center text-sm text-gray-500&quot;&gt;
+            既にアカウントをお持ちの方は{&#x27; &#x27;}
+            &lt;Link to=&quot;/login&quot; className=&quot;text-indigo-400 hover:text-indigo-300 transition-colors font-medium&quot;&gt;
+              ログイン
+            &lt;/Link&gt;
+          &lt;/p&gt;
+        &lt;/div&gt;
+
+        &lt;p className=&quot;mt-4 text-center text-xs text-gray-600&quot;&gt;
+          秘密鍵はこのデバイスにのみ保存されます。サーバーには送信されません。
+        &lt;/p&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  )
+}
+
+// ─── サブコンポーネント: 鍵生成ステータスバナー ────────────────
+
+interface KeyGenStatusBannerProps {
+  status: KeyGenStatus
+  fingerprint: string | null
+  onRetry: () =&gt; void
+}
+
+function KeyGenStatusBanner({ status, fingerprint, onRetry }: KeyGenStatusBannerProps) {
+  if (status === &#x27;generating&#x27;) {
+    return (
+      &lt;div className=&quot;flex items-center gap-3 px-4 py-3 bg-indigo-950/50 border border-indigo-800 rounded-xl&quot;&gt;
+        &lt;svg className=&quot;w-4 h-4 text-indigo-400 animate-spin shrink-0&quot; fill=&quot;none&quot; viewBox=&quot;0 0 24 24&quot;&gt;
+          &lt;circle className=&quot;opacity-25&quot; cx=&quot;12&quot; cy=&quot;12&quot; r=&quot;10&quot; stroke=&quot;currentColor&quot; strokeWidth=&quot;4&quot; /&gt;
+          &lt;path className=&quot;opacity-75&quot; fill=&quot;currentColor&quot; d=&quot;M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z&quot; /&gt;
+        &lt;/svg&gt;
+        &lt;div&gt;
+          &lt;p className=&quot;text-indigo-300 text-xs font-semibold&quot;&gt;ML-KEM-768 鍵ペア生成中...&lt;/p&gt;
+          &lt;p className=&quot;text-indigo-500 text-xs mt-0.5&quot;&gt;暗号学的乱数 (CSPRNG) を使用しています&lt;/p&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+    )
+  }
+
+  if (status === &#x27;ready&#x27; &amp;&amp; fingerprint) {
+    return (
+      &lt;div className=&quot;px-4 py-3 bg-emerald-950/40 border border-emerald-800 rounded-xl&quot;&gt;
+        &lt;div className=&quot;flex items-center gap-2 mb-2&quot;&gt;
+          &lt;svg className=&quot;w-3.5 h-3.5 text-emerald-400 shrink-0&quot; fill=&quot;none&quot; viewBox=&quot;0 0 24 24&quot; stroke=&quot;currentColor&quot; strokeWidth={2.5}&gt;
+            &lt;path strokeLinecap=&quot;round&quot; strokeLinejoin=&quot;round&quot; d=&quot;M5 13l4 4L19 7&quot; /&gt;
+          &lt;/svg&gt;
+          &lt;span className=&quot;text-emerald-400 text-xs font-semibold&quot;&gt;量子耐性鍵ペア生成完了&lt;/span&gt;
+        &lt;/div&gt;
+        &lt;div className=&quot;flex items-center gap-2&quot;&gt;
+          &lt;span className=&quot;text-gray-500 text-xs&quot;&gt;公開鍵フィンガープリント:&lt;/span&gt;
+          &lt;code className=&quot;text-emerald-300 text-xs font-mono tracking-wider&quot;&gt;{fingerprint}&lt;/code&gt;
+        &lt;/div&gt;
+        &lt;p className=&quot;text-gray-600 text-xs mt-1.5&quot;&gt;
+          秘密鍵はこのデバイスの IndexedDB にのみ保存されます
+        &lt;/p&gt;
+      &lt;/div&gt;
+    )
+  }
+
+  if (status === &#x27;error&#x27;) {
+    return (
+      &lt;div className=&quot;flex items-center justify-between px-4 py-3 bg-red-950/40 border border-red-800 rounded-xl&quot;&gt;
+        &lt;div className=&quot;flex items-center gap-2&quot;&gt;
+          &lt;svg className=&quot;w-4 h-4 text-red-400 shrink-0&quot; fill=&quot;none&quot; viewBox=&quot;0 0 24 24&quot; stroke=&quot;currentColor&quot; strokeWidth={2}&gt;
+            &lt;path strokeLinecap=&quot;round&quot; strokeLinejoin=&quot;round&quot;
+              d=&quot;M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z&quot; /&gt;
+          &lt;/svg&gt;
+          &lt;span className=&quot;text-red-300 text-xs&quot;&gt;鍵生成に失敗しました&lt;/span&gt;
+        &lt;/div&gt;
+        &lt;button
+          type=&quot;button&quot;
+          onClick={onRetry}
+          className=&quot;text-xs text-indigo-400 hover:text-indigo-300 transition-colors underline&quot;
+        &gt;
+          再生成
+        &lt;/button&gt;
+      &lt;/div&gt;
+    )
+  }
+
+  return null
+}
+
+// ─── パスワード強度計算 ───────────────────────────────────────
+
+interface PasswordStrength {
+  score: number   // 0〜4
+  label: string
+}
+
+function getPasswordStrength(password: string): PasswordStrength {
+  if (password.length === 0) return { score: 0, label: &#x27;&#x27; }
+
+  let score = 0
+  if (password.length &gt;= 8)  score++
+  if (password.length &gt;= 12) score++
+  if (/[0-9]/.test(password))            score++
+  if (/[!@#$%^&amp;*()_+\-=\[\]{}|;&#x27;:&quot;,.&lt;&gt;?\/\\`~]/.test(password)) score++
+
+  const labels = [&#x27;非常に弱い&#x27;, &#x27;弱い&#x27;, &#x27;普通&#x27;, &#x27;強い&#x27;, &#x27;非常に強い&#x27;]
+  return { score, label: labels[score] ?? &#x27;非常に強い&#x27; }
+}
+</pre>
+<div class="box ok"><div class="bt">✅ STEP 7 完了確認</div><p>src/pages/RegisterPage.tsx が作成されれば OK。</p></div>
+
+<hr class="pb">
+
+<!-- STEP 8: TotpModal -->
+<h1 class="s" id="step8">STEP 8 — src/components/auth/TotpModal.tsx 新規作成 <span class="tag-f">F-14</span></h1>
+<div class="step todo">
+  <div class="sn"><div class="sl">STEP</div><div class="sv">8</div></div>
+  <div class="sb">
+    <div class="st">TotpModal.tsx を新規作成する（TOTP 2FA 入力モーダル）</div>
+    <div class="ss">Phase 4 の DownloadPage から再利用するコンポーネント</div>
+  </div>
+</div>
+<div class="file-card">
+  <div class="fc-head">
+    <span class="fc-path">src/components/auth/TotpModal.tsx</span>
+    <span class="fc-badge new">🆕 新規作成</span>
+  </div>
+  <div class="fc-body"><p class="fc-desc">6桁 OTP 入力 UI。1桁入力ごとに自動フォーカス移動。ペーストで6桁一括入力 + 自動送信。<br>失敗時の残り試行回数表示。423 ロック状態を CRITICAL ログとして記録。</p></div>
+</div>
+<div class="clbl">frontend/src/components/auth/TotpModal.tsx — 完全なファイル内容</div>
+<pre>// =============================================================
+// ZeroSend — components/auth/TotpModal.tsx
+//
+// パス        : frontend/src/components/auth/TotpModal.tsx
+// 作成日      : 2026-02-23
+// 更新日      : 2026-02-23
+//
+// 概要        : F-14 TOTP 二要素認証モーダル（ダウンロードフロー用）
+//               6桁 OTP 入力 UI。失敗時エラー・ロック残回数表示。
+//               Phase 4 (DownloadPage) から使用する再利用可能コンポーネント。
+//
+// セキュリティ設計:
+//   - 認証失敗時の remaining_attempts を正確に表示
+//   - 423 ロック状態を視覚的に明確に表示（再試行ボタン非表示）
+//   - OTP は入力値のみを保持（送信後すぐに参照を破棄）
+//   - 6回失敗前に WARN ログ、ロック時に CRITICAL ログ
+//   - モーダル外クリックや Esc キーでの閉鎖を防止（認証完了まで）
+//
+// Props:
+//   urlToken         string               ワンタイムURLトークン
+//   recipientEmail   string               受信者メールアドレス（本人確認用）
+//   onSuccess        (authToken) =&gt; void  認証成功時コールバック
+//   onClose          () =&gt; void           閉鎖コールバック（isLocked 時のみ許可）
+//
+// 使用箇所:
+//   @/pages/DownloadPage  (Phase 4 F-35)
+// =============================================================
+
+import {
+  useState, useRef, useCallback, useEffect, KeyboardEvent, ClipboardEvent
+} from &#x27;react&#x27;
+import { verifyTotp, type TotpError } from &#x27;@/services/authService&#x27;
+import { logSecurityEvent } from &#x27;@/lib/securityLogger&#x27;
+
+// ─── OTP 入力桁数 ──────────────────────────────────────────────
+const OTP_LENGTH = 6
+
+// ─── Props 型定義 ──────────────────────────────────────────────
+
+export interface TotpModalProps {
+  /** ワンタイムURLトークン（/download/:token の token 部分） */
+  urlToken: string
+  /** 受信者メールアドレス（TOTP verify の本人確認用） */
+  recipientEmail: string
+  /** 認証成功時に auth_token を渡すコールバック */
+  onSuccess: (authToken: string, expiresIn: number) =&gt; void
+  /** 閉鎖コールバック（ロック状態・エラー時のみ有効） */
+  onClose: () =&gt; void
+}
+
+// ─── TotpModal コンポーネント ─────────────────────────────────
+
+export function TotpModal({
+  urlToken,
+  recipientEmail,
+  onSuccess,
+  onClose,
+}: TotpModalProps) {
+  const [digits,           setDigits]           = useState&lt;string[]&gt;(Array(OTP_LENGTH).fill(&#x27;&#x27;))
+  const [isSubmitting,     setIsSubmitting]      = useState(false)
+  const [error,            setError]             = useState&lt;string | null&gt;(null)
+  const [remainingAttempts, setRemainingAttempts] = useState&lt;number | null&gt;(null)
+  const [isLocked,         setIsLocked]          = useState(false)
+
+  // 各桁の input ref
+  const inputRefs = useRef&lt;(HTMLInputElement | null)[]&gt;(Array(OTP_LENGTH).fill(null))
+
+  // マウント時に最初の入力欄にフォーカス
+  useEffect(() =&gt; {
+    inputRefs.current[0]?.focus()
+  }, [])
+
+  // ロック状態になったら CRITICAL ログ
+  useEffect(() =&gt; {
+    if (isLocked) {
+      logSecurityEvent(&#x27;TOTP_LOCKED&#x27;, &#x27;CRITICAL&#x27;, undefined, undefined, recipientEmail)
+    }
+  }, [isLocked, recipientEmail])
+
+  // ── OTP 送信 ──
+  const submitOtp = useCallback(async (otpDigits: string[]) =&gt; {
+    const otp = otpDigits.join(&#x27;&#x27;)
+    if (otp.length !== OTP_LENGTH) return
+
+    setIsSubmitting(true)
+    setError(null)
+
+    try {
+      const result = await verifyTotp(urlToken, recipientEmail, otp)
+      onSuccess(result.authToken, result.expiresIn)
+    } catch (err) {
+      const totpErr = err as TotpError
+
+      if (totpErr.isLocked) {
+        setIsLocked(true)
+        setError(&#x27;認証試行回数の上限に達しました。このURLはロックされています。管理者にお問い合わせください。&#x27;)
+      } else {
+        setRemainingAttempts(totpErr.remainingAttempts ?? null)
+        setError(totpErr.message ?? &#x27;認証コードが正しくありません&#x27;)
+        // エラー時: 全桁クリアして最初の桁に戻す
+        setDigits(Array(OTP_LENGTH).fill(&#x27;&#x27;))
+        setTimeout(() =&gt; inputRefs.current[0]?.focus(), 50)
+      }
+    } finally {
+      setIsSubmitting(false)
+    }
+  }, [urlToken, recipientEmail, onSuccess])
+
+  // ── 入力変更ハンドラ ──
+  const handleChange = useCallback((index: number, value: string) =&gt; {
+    // 数字のみ許可
+    const digit = value.replace(/\D/g, &#x27;&#x27;).slice(-1)
+
+    setDigits(prev =&gt; {
+      const next = [...prev]
+      next[index] = digit
+      return next
+    })
+
+    setError(null)
+
+    if (digit) {
+      // 次の桁へ移動
+      if (index &lt; OTP_LENGTH - 1) {
+        inputRefs.current[index + 1]?.focus()
+      } else {
+        // 最後の桁入力完了 → 自動送信
+        const newDigits = [...digits]
+        newDigits[index] = digit
+        submitOtp(newDigits)
+      }
+    }
+  }, [digits, submitOtp])
+
+  // ── キーボードハンドラ ──
+  const handleKeyDown = useCallback((index: number, e: KeyboardEvent&lt;HTMLInputElement&gt;) =&gt; {
+    if (e.key === &#x27;Backspace&#x27;) {
+      if (digits[index]) {
+        // 現在の桁をクリア
+        setDigits(prev =&gt; {
+          const next = [...prev]
+          next[index] = &#x27;&#x27;
+          return next
+        })
+      } else if (index &gt; 0) {
+        // 前の桁に戻る
+        inputRefs.current[index - 1]?.focus()
+        setDigits(prev =&gt; {
+          const next = [...prev]
+          next[index - 1] = &#x27;&#x27;
+          return next
+        })
+      }
+    } else if (e.key === &#x27;ArrowLeft&#x27; &amp;&amp; index &gt; 0) {
+      inputRefs.current[index - 1]?.focus()
+    } else if (e.key === &#x27;ArrowRight&#x27; &amp;&amp; index &lt; OTP_LENGTH - 1) {
+      inputRefs.current[index + 1]?.focus()
+    } else if (e.key === &#x27;Enter&#x27;) {
+      submitOtp(digits)
+    }
+  }, [digits, submitOtp])
+
+  // ── ペースト対応（6桁一括入力） ──
+  const handlePaste = useCallback((e: ClipboardEvent&lt;HTMLInputElement&gt;) =&gt; {
+    e.preventDefault()
+    const pasted = e.clipboardData.getData(&#x27;text&#x27;).replace(/\D/g, &#x27;&#x27;).slice(0, OTP_LENGTH)
+    if (!pasted) return
+
+    const newDigits = Array(OTP_LENGTH).fill(&#x27;&#x27;)
+    pasted.split(&#x27;&#x27;).forEach((char, i) =&gt; {
+      newDigits[i] = char
+    })
+    setDigits(newDigits)
+    setError(null)
+
+    // ペーストで全桁揃った場合は自動送信
+    if (pasted.length === OTP_LENGTH) {
+      // フォーカスを最後の桁に
+      inputRefs.current[OTP_LENGTH - 1]?.focus()
+      submitOtp(newDigits)
+    } else {
+      inputRefs.current[pasted.length]?.focus()
+    }
+  }, [submitOtp])
+
+  // ── モーダルオーバーレイ ──
+  return (
+    &lt;div
+      className=&quot;fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm&quot;
+      role=&quot;dialog&quot;
+      aria-modal=&quot;true&quot;
+      aria-labelledby=&quot;totp-modal-title&quot;
+      // ロック状態のみ外クリックで閉じられる
+      onClick={isLocked ? onClose : undefined}
+    &gt;
+      &lt;div
+        className=&quot;relative w-full max-w-sm mx-4 bg-gray-900 border border-gray-800 rounded-2xl p-8 shadow-2xl&quot;
+        onClick={e =&gt; e.stopPropagation()}
+      &gt;
+
+        {/* ロック状態の閉じるボタン */}
+        {isLocked &amp;&amp; (
+          &lt;button
+            type=&quot;button&quot;
+            onClick={onClose}
+            className=&quot;absolute top-4 right-4 text-gray-500 hover:text-gray-300 transition-colors&quot;
+            aria-label=&quot;閉じる&quot;
+          &gt;
+            &lt;svg className=&quot;w-5 h-5&quot; fill=&quot;none&quot; viewBox=&quot;0 0 24 24&quot; stroke=&quot;currentColor&quot; strokeWidth={2}&gt;
+              &lt;path strokeLinecap=&quot;round&quot; strokeLinejoin=&quot;round&quot; d=&quot;M6 18L18 6M6 6l12 12&quot; /&gt;
+            &lt;/svg&gt;
+          &lt;/button&gt;
+        )}
+
+        {/* ヘッダー */}
+        &lt;div className=&quot;text-center mb-6&quot;&gt;
+          &lt;div className={`w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3 ${
+            isLocked ? &#x27;bg-red-950 border border-red-800&#x27; : &#x27;bg-indigo-950 border border-indigo-800&#x27;
+          }`}&gt;
+            {isLocked ? (
+              &lt;svg className=&quot;w-6 h-6 text-red-400&quot; fill=&quot;none&quot; viewBox=&quot;0 0 24 24&quot; stroke=&quot;currentColor&quot; strokeWidth={2}&gt;
+                &lt;path strokeLinecap=&quot;round&quot; strokeLinejoin=&quot;round&quot;
+                  d=&quot;M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z&quot; /&gt;
+              &lt;/svg&gt;
+            ) : (
+              &lt;svg className=&quot;w-6 h-6 text-indigo-400&quot; fill=&quot;none&quot; viewBox=&quot;0 0 24 24&quot; stroke=&quot;currentColor&quot; strokeWidth={2}&gt;
+                &lt;path strokeLinecap=&quot;round&quot; strokeLinejoin=&quot;round&quot;
+                  d=&quot;M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 8.25h3m-3 3h3m-3 3h3&quot; /&gt;
+              &lt;/svg&gt;
+            )}
+          &lt;/div&gt;
+
+          &lt;h2
+            id=&quot;totp-modal-title&quot;
+            className=&quot;text-lg font-semibold text-white&quot;
+          &gt;
+            {isLocked ? &#x27;アクセスがロックされました&#x27; : &#x27;2段階認証&#x27;}
+          &lt;/h2&gt;
+
+          {!isLocked &amp;&amp; (
+            &lt;p className=&quot;text-gray-400 text-sm mt-1&quot;&gt;
+              認証アプリの6桁コードを入力してください
+            &lt;/p&gt;
+          )}
+
+          {/* 受信者メール表示 */}
+          {recipientEmail &amp;&amp; !isLocked &amp;&amp; (
+            &lt;p className=&quot;text-indigo-400 text-xs font-mono mt-2 truncate&quot;&gt;
+              {recipientEmail}
+            &lt;/p&gt;
+          )}
+        &lt;/div&gt;
+
+        {/* OTP 入力エリア */}
+        {!isLocked &amp;&amp; (
+          &lt;div
+            className=&quot;flex justify-center gap-2.5 mb-5&quot;
+            role=&quot;group&quot;
+            aria-label=&quot;6桁認証コード入力&quot;
+          &gt;
+            {digits.map((digit, index) =&gt; (
+              &lt;input
+                key={index}
+                ref={el =&gt; { inputRefs.current[index] = el }}
+                type=&quot;text&quot;
+                inputMode=&quot;numeric&quot;
+                pattern=&quot;[0-9]*&quot;
+                maxLength={1}
+                value={digit}
+                onChange={e =&gt; handleChange(index, e.target.value)}
+                onKeyDown={e =&gt; handleKeyDown(index, e)}
+                onPaste={handlePaste}
+                onFocus={e =&gt; e.target.select()}
+                disabled={isSubmitting || isLocked}
+                aria-label={`${index + 1}桁目`}
+                className={`
+                  w-10 h-12 text-center text-lg font-bold font-mono rounded-xl border
+                  text-white bg-gray-800 caret-transparent
+                  transition-all duration-150 outline-none
+                  disabled:opacity-40 disabled:cursor-not-allowed
+                  focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50
+                  ${error &amp;&amp; !isLocked ? &#x27;border-red-700 bg-red-950/20&#x27; : &#x27;border-gray-700&#x27;}
+                  ${digit ? &#x27;border-indigo-600/70&#x27; : &#x27;&#x27;}
+                `}
+              /&gt;
+            ))}
+          &lt;/div&gt;
+        )}
+
+        {/* エラー表示 */}
+        {error &amp;&amp; (
+          &lt;div
+            role=&quot;alert&quot;
+            aria-live=&quot;assertive&quot;
+            className={`mb-4 px-3.5 py-2.5 rounded-lg text-sm flex items-start gap-2 ${
+              isLocked
+                ? &#x27;bg-red-950/60 border border-red-800 text-red-300&#x27;
+                : &#x27;bg-yellow-950/40 border border-yellow-800 text-yellow-300&#x27;
+            }`}
+          &gt;
+            &lt;svg className=&quot;w-4 h-4 mt-0.5 shrink-0&quot; fill=&quot;none&quot; viewBox=&quot;0 0 24 24&quot; stroke=&quot;currentColor&quot; strokeWidth={2}&gt;
+              &lt;path strokeLinecap=&quot;round&quot; strokeLinejoin=&quot;round&quot;
+                d=&quot;M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z&quot; /&gt;
+            &lt;/svg&gt;
+            &lt;span&gt;{error}&lt;/span&gt;
+          &lt;/div&gt;
+        )}
+
+        {/* 残り試行回数 */}
+        {remainingAttempts !== null &amp;&amp; !isLocked &amp;&amp; (
+          &lt;p className=&quot;text-center text-xs text-yellow-500 mb-3&quot;&gt;
+            残り試行回数: &lt;span className=&quot;font-bold&quot;&gt;{remainingAttempts}&lt;/span&gt;回
+          &lt;/p&gt;
+        )}
+
+        {/* ローディング */}
+        {isSubmitting &amp;&amp; (
+          &lt;div className=&quot;flex justify-center items-center gap-2 text-indigo-400 text-sm&quot;&gt;
+            &lt;svg className=&quot;w-4 h-4 animate-spin&quot; fill=&quot;none&quot; viewBox=&quot;0 0 24 24&quot;&gt;
+              &lt;circle className=&quot;opacity-25&quot; cx=&quot;12&quot; cy=&quot;12&quot; r=&quot;10&quot; stroke=&quot;currentColor&quot; strokeWidth=&quot;4&quot; /&gt;
+              &lt;path className=&quot;opacity-75&quot; fill=&quot;currentColor&quot; d=&quot;M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z&quot; /&gt;
+            &lt;/svg&gt;
+            &lt;span&gt;検証中...&lt;/span&gt;
+          &lt;/div&gt;
+        )}
+
+        {/* ヘルプテキスト */}
+        {!isLocked &amp;&amp; !isSubmitting &amp;&amp; (
+          &lt;p className=&quot;text-center text-xs text-gray-600 mt-4&quot;&gt;
+            Google Authenticator / Authy などの認証アプリをご利用ください
+          &lt;/p&gt;
+        )}
+      &lt;/div&gt;
+    &lt;/div&gt;
+  )
+}
+</pre>
+<div class="box ok"><div class="bt">✅ STEP 8 完了確認</div><p>src/components/auth/TotpModal.tsx が作成されれば OK。</p></div>
+
+<hr class="pb">
+
+<!-- STEP 9: ProtectedRoute -->
+<h1 class="s" id="step9">STEP 9 — src/components/layout/ProtectedRoute.tsx 上書き更新 <span class="tag-f">F-15</span></h1>
+<div class="step sec-step">
+  <div class="sn"><div class="sl">STEP</div><div class="sv">9</div></div>
+  <div class="sb">
+    <div class="st">🔐 ProtectedRoute.tsx を上書き更新する（セキュリティログ追加）</div>
+    <div class="ss">不正アクセス試行・権限不足アクセスを UNAUTHORIZED / FORBIDDEN として記録する</div>
+  </div>
+</div>
+<div class="file-card">
+  <div class="fc-head">
+    <span class="fc-path">src/components/layout/ProtectedRoute.tsx</span>
+    <span class="fc-badge upd sec">🔄 上書き更新 🔐</span>
+  </div>
+  <div class="fc-body"><p class="fc-desc">未認証アクセスを UNAUTHORIZED_ACCESS、admin権限不足を FORBIDDEN_ACCESS としてログ記録。ルート遷移ごとに checkTokenExpiry() を実行。</p></div>
+</div>
+<div class="clbl">frontend/src/components/layout/ProtectedRoute.tsx — 完全なファイル内容（上書き）</div>
+<pre>// =============================================================
+// ZeroSend — components/layout/ProtectedRoute.tsx
+//
+// パス        : frontend/src/components/layout/ProtectedRoute.tsx
+// 作成日      : 2026-02-23
+// 更新日      : 2026-02-23
+//
+// 概要        : F-15 認証ガード HOC（Higher-Order Component）
+//               JWT 未認証 → /login リダイレクト
+//               requireAdmin=true 時、admin ロール以外 → / リダイレクト
+//               全不正アクセス試行を securityLogger で記録
+//
+// セキュリティ設計:
+//   - 未認証アクセス試行をすべて UNAUTHORIZED_ACCESS として記録
+//   - admin 権限不足アクセスを FORBIDDEN_ACCESS として記録
+//   - リダイレクト前にアクセスしたパスを記録（監査証跡）
+//   - Outlet レンダリング前にトークン有効期限の確認を実施
+//
+// Props:
+//   requireAdmin  boolean  (default: false)  admin ロール必須フラグ
+//
+// 使用箇所:
+//   @/App.tsx  認証必須ルートのラッパーとして使用
+// =============================================================
+
+import { useEffect } from &#x27;react&#x27;
+import { Navigate, Outlet, useLocation } from &#x27;react-router-dom&#x27;
+import { useAuthStore } from &#x27;@/stores/authStore&#x27;
+import { logUnauthorizedAccess, logForbiddenAccess } from &#x27;@/lib/securityLogger&#x27;
+
+interface ProtectedRouteProps {
+  requireAdmin?: boolean
+}
+
+export function ProtectedRoute({ requireAdmin = false }: ProtectedRouteProps) {
+  const location        = useLocation()
+  const isAuthenticated = useAuthStore(s =&gt; s.isAuthenticated)
+  const user            = useAuthStore(s =&gt; s.user)
+  const checkTokenExpiry = useAuthStore(s =&gt; s.checkTokenExpiry)
+
+  // レンダリング前にトークン有効期限チェック（期限切れなら logout() が呼ばれる）
+  useEffect(() =&gt; {
+    if (isAuthenticated) {
+      checkTokenExpiry()
+    }
+  }, [isAuthenticated, checkTokenExpiry, location.pathname])
+
+  // ── 未認証チェック ──
+  if (!isAuthenticated) {
+    logUnauthorizedAccess(location.pathname)
+
+    // state にアクセス先を保存（ログイン後に元のページに戻れるよう）
+    return &lt;Navigate to=&quot;/login&quot; state={{ from: location }} replace /&gt;
+  }
+
+  // ── Admin 権限チェック ──
+  if (requireAdmin &amp;&amp; user?.role !== &#x27;admin&#x27;) {
+    logForbiddenAccess(location.pathname, user?.role ?? &#x27;unknown&#x27;)
+    return &lt;Navigate to=&quot;/&quot; replace /&gt;
+  }
+
+  return &lt;Outlet /&gt;
+}
+</pre>
+<div class="box ok"><div class="bt">✅ STEP 9 完了確認</div><p>src/components/layout/ProtectedRoute.tsx が更新されれば OK。</p></div>
+
+<hr class="pb">
+
+<!-- STEP 10: App.tsx -->
+<h1 class="s" id="step10">STEP 10 — src/App.tsx 上書き更新 <span class="tag-f">F-12</span><span class="tag-f">F-13</span></h1>
+<div class="step todo">
+  <div class="sn"><div class="sl">STEP</div><div class="sv">10</div></div>
+  <div class="sb">
+    <div class="st">App.tsx を上書き更新する（/register ルート追加 + useTokenExpiryWatch）</div>
+    <div class="ss">AppShell に useTokenExpiryWatch(60_000) を追加してトークン有効期限監視をアプリ全体に適用する</div>
+  </div>
+</div>
+<div class="file-card">
+  <div class="fc-head">
+    <span class="fc-path">src/App.tsx</span>
+    <span class="fc-badge upd">🔄 上書き更新</span>
+  </div>
+  <div class="fc-body"><p class="fc-desc">Phase 1 の変更点: /register ルート追加（F-13）、AppShell に useTokenExpiryWatch を統合（F-12）。</p></div>
+</div>
+<div class="clbl">frontend/src/App.tsx — 完全なファイル内容（上書き）</div>
+<pre>// =============================================================
+// ZeroSend — App.tsx
+//
+// パス        : frontend/src/App.tsx
+// 作成日      : 2026-02-23
+// 更新日      : 2026-02-23
+//
+// 概要        : React Router v7 ルーティング設定
+//               Routes: /login / /register / / (send) / /list / /download/:token / /admin
+//
+// Phase 1 変更点:
+//   - /register ルート追加 (F-13)
+//   - useTokenExpiryWatch を AppShell に追加 (F-12)
+//     → ログイン中の全画面でトークン有効期限を1分ごとにチェック
+//     → 期限切れ時は authStore.logout(&#x27;token_expired&#x27;) が自動実行
+//
+// 依存関係:
+//   react-router-dom               ^7
+//   @tanstack/react-query          ^5
+//   @tanstack/react-query-devtools ^5
+//   @/lib/queryClient
+//   @/components/layout/ProtectedRoute
+//   @/components/layout/Navbar
+//   @/pages/LoginPage              useTokenExpiryWatch もここからインポート
+//   @/pages/RegisterPage
+//   @/pages/SendPage
+//   @/pages/ListPage
+//   @/pages/DownloadPage
+//   @/pages/AdminPage
+// =============================================================
+
+import { BrowserRouter, Routes, Route, Navigate } from &#x27;react-router-dom&#x27;
+import { QueryClientProvider } from &#x27;@tanstack/react-query&#x27;
+import { ReactQueryDevtools } from &#x27;@tanstack/react-query-devtools&#x27;
+import { queryClient } from &#x27;@/lib/queryClient&#x27;
+import { ProtectedRoute } from &#x27;@/components/layout/ProtectedRoute&#x27;
+import { Navbar } from &#x27;@/components/layout/Navbar&#x27;
+import { LoginPage, useTokenExpiryWatch } from &#x27;@/pages/LoginPage&#x27;
+import { RegisterPage } from &#x27;@/pages/RegisterPage&#x27;
+import { SendPage } from &#x27;@/pages/SendPage&#x27;
+import { ListPage } from &#x27;@/pages/ListPage&#x27;
+import { DownloadPage } from &#x27;@/pages/DownloadPage&#x27;
+import { AdminPage } from &#x27;@/pages/AdminPage&#x27;
+
+// ─── トークン有効期限監視を内包したアプリシェル ────────────────
+
+function AppShell() {
+  // F-12: トークン有効期限の定期チェック（60秒ごと）
+  // 期限切れ → authStore.logout(&#x27;token_expired&#x27;) → ProtectedRoute が /login にリダイレクト
+  useTokenExpiryWatch(60_000)
+
+  return (
+    &lt;&gt;
+      &lt;Navbar /&gt;
+      &lt;main&gt;
+        &lt;Routes&gt;
+          {/* 認証不要ルート */}
+          &lt;Route path=&quot;/login&quot;              element={&lt;LoginPage /&gt;} /&gt;
+          &lt;Route path=&quot;/register&quot;           element={&lt;RegisterPage /&gt;} /&gt;    {/* F-13 追加 */}
+          &lt;Route path=&quot;/download/:token&quot;    element={&lt;DownloadPage /&gt;} /&gt;
+
+          {/* 認証必須ルート */}
+          &lt;Route element={&lt;ProtectedRoute /&gt;}&gt;
+            &lt;Route path=&quot;/&quot;     element={&lt;SendPage /&gt;} /&gt;
+            &lt;Route path=&quot;/list&quot; element={&lt;ListPage /&gt;} /&gt;
+          &lt;/Route&gt;
+
+          {/* Admin 専用ルート */}
+          &lt;Route element={&lt;ProtectedRoute requireAdmin /&gt;}&gt;
+            &lt;Route path=&quot;/admin&quot; element={&lt;AdminPage /&gt;} /&gt;
+          &lt;/Route&gt;
+
+          {/* 未定義パス → トップへ */}
+          &lt;Route path=&quot;*&quot; element={&lt;Navigate to=&quot;/&quot; replace /&gt;} /&gt;
+        &lt;/Routes&gt;
+      &lt;/main&gt;
+    &lt;/&gt;
+  )
+}
+
+// ─── App ルートコンポーネント ──────────────────────────────────
+
+export default function App() {
+  return (
+    &lt;QueryClientProvider client={queryClient}&gt;
+      &lt;BrowserRouter&gt;
+        &lt;AppShell /&gt;
+      &lt;/BrowserRouter&gt;
+
+      {/* TanStack Query DevTools（開発環境のみ） */}
+      {import.meta.env.DEV &amp;&amp; (
+        &lt;ReactQueryDevtools initialIsOpen={false} /&gt;
+      )}
+    &lt;/QueryClientProvider&gt;
+  )
+}
+</pre>
+<div class="box ok"><div class="bt">✅ STEP 10 完了確認</div><p>src/App.tsx が更新されれば OK。</p></div>
+
+<hr class="pb">
+
+<!-- STEP 11: 動作確認 -->
+<h1 class="s" id="step11">STEP 11 — 動作確認・テスト</h1>
+<div class="step done">
+  <div class="sn"><div class="sl">STEP</div><div class="sv">11</div></div>
+  <div class="sb">
+    <div class="st">型チェック → 開発サーバー起動 → ブラウザ動作確認の順で実施する</div>
+    <div class="ss">バックエンドが起動済みであることを先に確認すること</div>
+  </div>
+</div>
+
+<h2 class="s">11.1 バックエンド疎通確認</h2>
+<div class="clbl">別ターミナルで確認</div>
+<pre>curl -s http://localhost:8000/api/v1/health</pre>
+<div class="result"><span class="ok-r">&#123;"status":"ok"&#125;  ← 200 が返れば OK</span>
+<span class="err-r">Connection refused ← この場合は cd ~/projects/zerosend &amp;&amp; docker compose up -d</span></div>
+
+<h2 class="s">11.2 TypeScript 型チェック</h2>
+<div class="clbl">frontend/ で実行</div>
+<pre>pnpm type-check</pre>
+<div class="result"><span class="ok-r">✅ 成功時: エラーなし（何も表示されない）</span>
+<span class="warn-r">⚠️ よくあるエラー:</span>
+Cannot find module '@/lib/securityLogger'   → STEP 3 のファイルが未作成
+Property 'expiresIn' does not exist         → authStore.ts が STEP 5 の内容に更新されていない
+Module '"@noble/post-quantum/ml-kem"'       → pnpm add @noble/post-quantum を実行</div>
+
+<h2 class="s">11.3 開発サーバー起動</h2>
+<div class="clbl">frontend/ で実行</div>
+<pre>pnpm dev</pre>
+<div class="result"><span class="ok-r">  VITE v7.x.x  ready in 300ms
+  ➜  Local:   http://localhost:3000/</span></div>
+
+<h2 class="s">11.4 動作確認チェックリスト</h2>
+<table>
+  <tr><th>#</th><th>操作</th><th>期待動作</th><th>タスク</th></tr>
+  <tr><td>1</td><td><code>http://localhost:3000/</code> へアクセス</td><td>/login へリダイレクト。コンソールに 🔴 UNAUTHORIZED_ACCESS ログ</td><td>F-15</td></tr>
+  <tr><td>2</td><td><code>/admin</code> へアクセス</td><td>/login へリダイレクト</td><td>F-15</td></tr>
+  <tr><td>3</td><td><code>/login</code> 画面表示</td><td>ZeroSend ロゴ・Quantum-Safe バッジ・フォームが表示される</td><td>F-11</td></tr>
+  <tr><td>4</td><td><code>/register</code> へアクセス</td><td>「ML-KEM-768 鍵ペア生成中...」→「量子耐性鍵ペア生成完了」バナー表示</td><td>F-13</td></tr>
+  <tr><td>5</td><td><code>/register</code> で登録実行</td><td>登録完了画面 → /login へリダイレクト。コンソールに 🔵 REGISTER_SUCCESS</td><td>F-13</td></tr>
+  <tr><td>6</td><td>登録アカウントでログイン</td><td>/ へリダイレクト。コンソールに 🔵 LOGIN_SUCCESS</td><td>F-11, F-12</td></tr>
+  <tr><td>7</td><td>DevTools → Application → IndexedDB</td><td>zerosend-keys DB に秘密鍵（2400 bytes）が保存されている</td><td>F-13</td></tr>
+  <tr><td>8</td><td>誤パスワードでログイン</td><td>エラーメッセージ表示。コンソールに 🟡 LOGIN_FAILURE</td><td>F-11</td></tr>
+</table>
+
+<hr class="pb">
+
+<!-- STEP 12: トラブルシューティング -->
+<h1 class="s" id="trouble">STEP 12 — トラブルシューティング</h1>
+
+<div class="box err">
+  <div class="bt">❌ Cannot find module '@noble/post-quantum/ml-kem'</div>
+  <p><code>pnpm add @noble/post-quantum</code> を実行して再度 <code>pnpm type-check</code>。</p>
+</div>
+<div class="box err">
+  <div class="bt">❌ ml_kem768.keygen is not a function</div>
+  <p>import パス確認: <code>import &#123; ml_kem768 &#125; from '@noble/post-quantum/ml-kem'</code>（<code>/kyber</code> や <code>/ml_kem</code> は誤り）</p>
+</div>
+<div class="box err">
+  <div class="bt">❌ Property 'expiresIn' does not exist on type ... / setAuth の引数エラー</div>
+  <p>authStore.ts が Phase 0 の古いバージョンのまま。STEP 5 の内容で完全に上書きすること。</p>
+</div>
+<div class="box err">
+  <div class="bt">❌ POST /api/v1/auth/register → 400 Bad Request</div>
+  <p>DevTools Network でリクエストボディを確認。<code>display_name</code>・<code>public_key_b64</code>・<code>key_type: "kyber768"</code> の3フィールドが snake_case で送信されていること。</p>
+</div>
+<div class="box err">
+  <div class="bt">❌ IndexedDB に秘密鍵が保存されない</div>
+  <p><code>src/lib/keyStorage.ts</code> に <code>storePrivateKey(userId, key)</code> 関数があることを確認: <code>cat src/lib/keyStorage.ts | grep storePrivateKey</code></p>
+</div>
+<div class="box warn">
+  <div class="bt">⚠️ コンソールに UNAUTHORIZED_ACCESS が出るが正常</div>
+  <p>未ログイン状態で / にアクセスすると必ずこのログが出ます。ログイン後は出なくなります。</p>
+</div>
+
+<hr class="pb">
+
+<!-- ファイル構造 -->
+<h1 class="s">Phase 1 完了後のファイル構造</h1>
+<div class="tree">
+frontend/src/
+│
+├── <span class="fn">App.tsx</span>                    <span class="cm">← 🔄 更新: /register 追加・useTokenExpiryWatch 統合</span>
+├── <span class="fn">index.css</span>
+├── <span class="fn">main.tsx</span>
+│
+├── <span class="d">types/</span>
+│   └── <span class="fn">api.ts</span>                <span class="cm">← 変更なし</span>
+│
+├── <span class="d">lib/</span>
+│   ├── <span class="fn">apiClient.ts</span>           <span class="cm">← 変更なし</span>
+│   ├── <span class="fn">keyStorage.ts</span>          <span class="cm">← 変更なし（storePrivateKey を RegisterPage から呼ぶ）</span>
+│   ├── <span class="fn">queryClient.ts</span>         <span class="cm">← 変更なし</span>
+│   └── <span class="new-f">securityLogger.ts</span>      <span class="cm">← 🆕 新規作成</span>
+│
+├── <span class="d">services/</span>                  <span class="cm">← 🆕 新規ディレクトリ</span>
+│   └── <span class="new-f">authService.ts</span>         <span class="cm">← 🆕 新規作成</span>
+│
+├── <span class="d">stores/</span>
+│   ├── <span class="fn">authStore.ts</span>           <span class="cm">← 🔄 更新: expiresIn / checkTokenExpiry 追加</span>
+│   ├── <span class="fn">transferStore.ts</span>       <span class="cm">← 変更なし</span>
+│   └── <span class="fn">keyStore.ts</span>            <span class="cm">← 変更なし</span>
+│
+├── <span class="d">components/</span>
+│   ├── <span class="d">auth/</span>                  <span class="cm">← 🆕 新規ディレクトリ</span>
+│   │   └── <span class="new-f">TotpModal.tsx</span>      <span class="cm">← 🆕 新規作成</span>
+│   ├── <span class="d">layout/</span>
+│   │   ├── <span class="fn">Navbar.tsx</span>          <span class="cm">← 変更なし</span>
+│   │   └── <span class="fn">ProtectedRoute.tsx</span>  <span class="cm">← 🔄 更新: セキュリティログ追加</span>
+│   └── <span class="d">shared/</span>
+│
+└── <span class="d">pages/</span>
+    ├── <span class="fn">LoginPage.tsx</span>          <span class="cm">← 🔄 更新: UI 実装・useTokenExpiryWatch export</span>
+    ├── <span class="new-f">RegisterPage.tsx</span>       <span class="cm">← 🆕 新規作成: ML-KEM-768 鍵生成・IndexedDB 保存</span>
+    ├── <span class="fn">SendPage.tsx</span>           <span class="cm">← 変更なし (Phase 2)</span>
+    ├── <span class="fn">ListPage.tsx</span>           <span class="cm">← 変更なし (Phase 3)</span>
+    ├── <span class="fn">DownloadPage.tsx</span>       <span class="cm">← 変更なし (Phase 4) ← TotpModal を使う</span>
+    └── <span class="fn">AdminPage.tsx</span>          <span class="cm">← 変更なし (Phase 5)</span>
+</div>
+
+<div style="background:var(--navy);color:#fff;border-radius:12px;padding:28px 32px;margin-top:40px;text-align:center">
+  <div style="font-size:20px;font-weight:800;margin-bottom:8px">Phase 1 認証・鍵管理 完了 🎉</div>
+  <div style="font-size:13px;color:#a5b4fc;margin-bottom:6px">次は <strong>Phase 2：ファイル送信画面 (F-16〜F-25)</strong> に進んでください</div>
+  <div style="font-size:12px;color:#64748B">ステップインジケーター / ドラッグ&amp;ドロップ / AES-256-GCM 暗号化 / 分割アップロード</div>
+</div>
+
+</div></body>
+</html>

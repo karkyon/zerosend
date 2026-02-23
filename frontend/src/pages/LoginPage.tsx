@@ -22,7 +22,7 @@
 //   @/stores/authStore        useAuthStore (setAuth / isAuthenticated)
 // =============================================================
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate, Link, Navigate } from 'react-router-dom'
 import { loginUser } from '@/services/authService'
 import { useAuthStore } from '@/stores/authStore'
@@ -79,7 +79,7 @@ export function LoginPage() {
   }
 
   // ── フォーム送信 ──
-  const handleSubmit = useCallback(async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
 
@@ -116,7 +116,7 @@ export function LoginPage() {
     } finally {
       setIsLoading(false)
     }
-  }, [email, password, setAuth, navigate])
+  }
 
   // ── レンダリング ──
   return (

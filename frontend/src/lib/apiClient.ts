@@ -63,8 +63,12 @@ function createApiClient(): KyInstance {
         },
       ],
       afterResponse: [
-        async (_request, _options, response) => {
-          if (response.status === 401) {
+        async (request, _options, response) => {
+          // ログインエンドポイントの401は除外（認証試行の失敗は正常なフロー）
+          const isAuthEndpoint = request.url.includes('/auth/login') ||
+                                request.url.includes('/auth/register') ||
+                                request.url.includes('/auth/totp')
+          if (response.status === 401 && !isAuthEndpoint) {
             _onUnauthorized?.()
           }
           return response

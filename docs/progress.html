@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZeroSend — Frontend 開発進捗</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --brand: #4f46e5;
+    --brand-light: #eef2ff;
+    --brand-mid: #818cf8;
+    --bg: #f4f4f8;
+    --surface: #ffffff;
+    --border: #e5e7eb;
+    --text: #111827;
+    --muted: #6b7280;
+    --done: #059669;
+    --done-bg: #d1fae5;
+    --wip: #d97706;
+    --wip-bg: #fef3c7;
+    --hold: #dc2626;
+    --hold-bg: #fee2e2;
+    --todo-bg: #f3f4f6;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Noto Sans JP', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  /* ── ヘッダー ── */
+  .header {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(255,255,255,0.96);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 24px 10px;
+    box-shadow: 0 1px 6px rgba(79,70,229,0.06);
+  }
+  .header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .logo { display: flex; align-items: center; gap: 10px; }
+  .logo-icon {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 15px; box-shadow: 0 2px 8px rgba(99,102,241,0.3);
+  }
+  .logo-title { font-weight: 700; font-size: 15px; letter-spacing: -0.3px; }
+  .logo-sub { font-size: 10px; font-family: 'DM Mono', monospace; color: var(--brand); background: var(--brand-light); padding: 2px 8px; border-radius: 99px; border: 1px solid #c7d2fe; }
+  .stats { display: flex; align-items: center; gap: 16px; }
+  .stat-pct { font-size: 26px; font-weight: 700; color: var(--brand); font-family: 'DM Mono', monospace; line-height: 1; }
+  .stat-label { font-size: 10px; color: var(--muted); margin-top: 2px; }
+  /* プログレスバー */
+  .progress-bar-wrap { height: 5px; background: #e0e7ff; border-radius: 99px; overflow: hidden; margin-bottom: 10px; }
+  .progress-bar-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg, #6366f1, #8b5cf6, #a78bfa); transition: width 0.4s ease; }
+  /* フィルター */
+  .filters { display: flex; gap: 6px; flex-wrap: wrap; }
+  .filter-btn {
+    padding: 3px 12px; border-radius: 99px; font-size: 11px; font-weight: 600;
+    border: 1.5px solid var(--border); background: #fff; color: var(--muted);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .filter-btn:hover { border-color: var(--brand-mid); color: var(--brand); }
+  .filter-btn.active { background: var(--brand); color: #fff; border-color: var(--brand); }
+  /* ── メインコンテンツ ── */
+  .main { max-width: 1100px; margin: 0 auto; padding: 20px 20px 40px; }
+  /* ── フェーズブロック ── */
+  .phase { border-radius: 14px; border: 1.5px solid; margin-bottom: 12px; overflow: hidden; transition: box-shadow 0.2s; }
+  .phase:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.07); }
+  .phase-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 18px; cursor: pointer; user-select: none;
+    transition: background 0.15s;
+  }
+  .phase-header:hover { filter: brightness(0.97); }
+  .phase-left { display: flex; align-items: center; gap: 10px; }
+  .phase-badge { font-size: 10px; font-weight: 700; color: #fff; padding: 2px 9px; border-radius: 99px; font-family: 'DM Mono', monospace; }
+  .phase-name { font-weight: 700; font-size: 13px; }
+  .phase-count { font-size: 11px; font-family: 'DM Mono', monospace; }
+  .phase-right { display: flex; align-items: center; gap: 10px; }
+  .phase-mini-bar { width: 80px; height: 4px; border-radius: 99px; background: rgba(255,255,255,0.4); overflow: hidden; }
+  .phase-mini-fill { height: 100%; border-radius: 99px; transition: width 0.3s; }
+  .chevron { font-size: 11px; color: inherit; opacity: 0.5; transition: transform 0.2s; }
+  .chevron.open { transform: rotate(180deg); }
+  /* ── テーブル ── */
+  .phase-table { width: 100%; border-collapse: collapse; }
+  .phase-table thead th {
+    padding: 6px 10px; text-align: left;
+    font-size: 9px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+    color: var(--muted); background: rgba(255,255,255,0.5); border-bottom: 1px solid rgba(0,0,0,0.06);
+  }
+  .phase-table tbody tr { border-bottom: 1px solid rgba(0,0,0,0.04); transition: background 0.1s; }
+  .phase-table tbody tr:last-child { border-bottom: none; }
+  .phase-table tbody tr:hover { background: rgba(255,255,255,0.7); }
+  .phase-table tbody td { padding: 8px 10px; vertical-align: top; }
+  .task-id { font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 500; color: var(--muted); background: rgba(0,0,0,0.05); padding: 2px 6px; border-radius: 5px; white-space: nowrap; }
+  .task-title { font-weight: 600; font-size: 12px; line-height: 1.4; }
+  .task-detail { font-size: 11px; color: var(--muted); line-height: 1.5; }
+  .task-api { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--brand); background: var(--brand-light); padding: 2px 6px; border-radius: 5px; display: inline-block; line-height: 1.4; }
+  .task-screen { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); }
+  /* ステータスセレクト */
+  .status-select {
+    font-size: 10px; font-weight: 600; border: none; border-radius: 99px;
+    padding: 3px 8px; cursor: pointer; outline: none; appearance: none;
+    -webkit-appearance: none; text-align: center; width: 64px;
+  }
+  .status-todo   { background: var(--todo-bg); color: #374151; }
+  .status-wip    { background: var(--wip-bg);  color: var(--wip); }
+  .status-done   { background: var(--done-bg); color: var(--done); }
+  .status-hold   { background: var(--hold-bg); color: var(--hold); }
+  /* ── 技術スタック ── */
+  .stack-card { background: #fff; border: 1.5px solid var(--border); border-radius: 14px; padding: 18px 20px; margin-top: 12px; }
+  .stack-card h2 { font-size: 13px; font-weight: 700; margin-bottom: 12px; color: var(--text); }
+  .stack-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 32px; }
+  .stack-item { display: flex; gap: 8px; font-size: 11px; }
+  .stack-key { color: var(--muted); flex-shrink: 0; }
+  .stack-val { font-family: 'DM Mono', monospace; font-weight: 500; color: var(--brand); }
+  /* ── セキュリティ注意書き ── */
+  .security-card { background: #fffbeb; border: 1.5px solid #fcd34d; border-radius: 14px; padding: 14px 18px; margin-top: 12px; }
+  .security-card h3 { font-size: 12px; font-weight: 700; color: #92400e; margin-bottom: 8px; }
+  .security-card ul { padding-left: 14px; }
+  .security-card li { font-size: 11px; color: #78350f; line-height: 1.7; }
+  /* ── 保存インジケーター ── */
+  .save-toast {
+    position: fixed; bottom: 20px; right: 20px;
+    background: #111827; color: #fff; font-size: 11px; font-weight: 500;
+    padding: 8px 16px; border-radius: 99px; font-family: 'DM Mono', monospace;
+    opacity: 0; transform: translateY(8px);
+    transition: opacity 0.2s, transform 0.2s;
+    pointer-events: none; z-index: 999;
+  }
+  .save-toast.show { opacity: 1; transform: translateY(0); }
+  /* ── カラム幅 ── */
+  .col-id     { width: 52px; }
+  .col-title  { width: 22%; }
+  .col-detail { width: 38%; }
+  .col-api    { width: 18%; }
+  .col-screen { width: 10%; }
+  .col-status { width: 68px; }
+  /* hidden */
+  .phase-body.hidden { display: none; }
+</style>
+</head>
+<body>
+
+<!-- ヘッダー -->
+<div class="header">
+  <div class="header-top">
+    <div class="logo">
+      <div class="logo-icon">🔐</div>
+      <div>
+        <div class="logo-title">ZeroSend</div>
+      </div>
+      <span class="logo-sub">Frontend 開発進捗管理</span>
+    </div>
+    <div class="stats">
+      <div>
+        <div class="stat-pct" id="pct-display">0%</div>
+        <div class="stat-label" id="stat-label">0/48 完了</div>
+      </div>
+    </div>
+  </div>
+  <div class="progress-bar-wrap">
+    <div class="progress-bar-fill" id="global-bar" style="width:0%"></div>
+  </div>
+  <div class="filters" id="filters">
+    <button class="filter-btn active" data-filter="all" onclick="setFilter(this,'all')">すべて</button>
+    <button class="filter-btn" data-filter="未着手" onclick="setFilter(this,'未着手')">未着手</button>
+    <button class="filter-btn" data-filter="進行中" onclick="setFilter(this,'進行中')">進行中</button>
+    <button class="filter-btn" data-filter="完了" onclick="setFilter(this,'完了')">完了</button>
+    <button class="filter-btn" data-filter="保留" onclick="setFilter(this,'保留')">保留</button>
+  </div>
+</div>
+
+<div class="main" id="main"></div>
+<div class="save-toast" id="toast">💾 保存しました</div>
+
+<script>
+const PHASES = [
+  { id:'P0', label:'Phase 0', name:'基盤構築', badge:'#475569', bg:'#f8fafc', border:'#cbd5e1', textColor:'#334155',
+    tasks:[
+      { id:'F-01', title:'Vite + React 19 + TypeScript プロジェクト初期化', detail:'frontend/ に pnpm create vite@latest。tsconfig strict・path alias (@/) 設定。', api:'—', screen:'—' },
+      { id:'F-02', title:'Tailwind CSS v4 + shadcn/ui セットアップ', detail:'ワイヤーフレームの brand カラー・font (Noto Sans JP / DM Mono) をテーマに反映。', api:'—', screen:'全画面' },
+      { id:'F-03', title:'環境変数 (.env.local) 設定', detail:'VITE_API_BASE_URL=http://localhost:8000/api/v1。本番用 .env.production。', api:'—', screen:'—' },
+      { id:'F-04', title:'APIクライアント基盤 (ky)', detail:'baseURL・JWT Authorization ヘッダー自動付与・401 自動ログアウト・レスポンス型定義。', api:'全エンドポイント', screen:'—' },
+      { id:'F-05', title:'TypeScript 型定義ファイル', detail:'バックエンド API レスポンスに対応する型を src/types/ に集約。Prisma スキーマと整合。', api:'—', screen:'—' },
+      { id:'F-06', title:'Zustand ストア雛形', detail:'authStore (JWT/user)・transferStore (送信フロー state)・keyStore (Kyber keypair)。', api:'—', screen:'—' },
+      { id:'F-07', title:'React Router v7 ルーティング設定', detail:'/ (送信) / /list / /admin / /download/:token / /login の5ルート。ProtectedRoute HOC。', api:'—', screen:'全画面' },
+      { id:'F-08', title:'共通ナビゲーションバー', detail:'ロゴ・Quantum-Safe バッジ・画面タブ・ML-KEM-768 インジケーター・ユーザーアバター。', api:'—', screen:'全画面' },
+      { id:'F-09', title:'IndexedDB ユーティリティ (暗号鍵永続化)', detail:'idb-keyval。Kyber 秘密鍵を userId をキーに保存/取得/削除。', api:'—', screen:'—' },
+      { id:'F-10', title:'TanStack Query セットアップ & QueryClient', detail:'staleTime・retry・onError グローバル設定。Devtools は開発環境のみ。', api:'—', screen:'—' },
+    ]},
+  { id:'P1', label:'Phase 1', name:'認証・鍵管理', badge:'#7c3aed', bg:'#faf5ff', border:'#ddd6fe', textColor:'#5b21b6',
+    tasks:[
+      { id:'F-11', title:'ログイン画面 UI', detail:'メールアドレス・パスワード入力。ZeroSend ロゴ・Quantum-Safe バッジ表示。', api:'POST /auth/login', screen:'/login' },
+      { id:'F-12', title:'JWT 取得・ストア管理・自動リフレッシュ', detail:'access_token を Zustand に保存。有効期限 8h 前に再ログイン誘導。', api:'POST /auth/login', screen:'/login' },
+      { id:'F-13', title:'ユーザー登録画面 + ML-KEM-768 鍵ペア生成', detail:'@noble/post-quantum で kyber768.keygen()。公開鍵をサーバ送信。秘密鍵を IndexedDB 保存。', api:'POST /auth/register', screen:'/register' },
+      { id:'F-14', title:'TOTP 2FA 入力画面', detail:'6桁 OTP 入力 UI。失敗時エラー・ロック残回数表示。verifyTotp → auth_token 取得。', api:'POST /auth/totp/verify', screen:'モーダル' },
+      { id:'F-15', title:'Protected Route ガード', detail:'JWT なし → /login リダイレクト。role: admin でのみ /admin アクセス許可。', api:'—', screen:'全画面' },
+    ]},
+  { id:'P2', label:'Phase 2', name:'ファイル送信画面 (SCREEN 1)', badge:'#4338ca', bg:'#eef2ff', border:'#c7d2fe', textColor:'#3730a3',
+    tasks:[
+      { id:'F-16', title:'3ステップ進捗インジケーター', detail:'①ファイル選択 → ②受信者設定 → ③送信確認。step state 管理。', api:'—', screen:'/' },
+      { id:'F-17', title:'ドラッグ & ドロップ ゾーン', detail:'react-dropzone。最大 1GB バリデーション。選択後サムネイル・サイズ・種別表示。', api:'—', screen:'/' },
+      { id:'F-18', title:'受信者メール入力 + Kyber 鍵バッジ', detail:'メール入力 → API で受信者公開鍵検索。「🔑 Kyber鍵あり」バッジ表示。タグ形式 UI。', api:'POST /transfer/initiate', screen:'/' },
+      { id:'F-19', title:'クラウドストレージ選択 UI', detail:'Box / Google Drive / OneDrive / Dropbox のグリッド選択。', api:'—', screen:'/' },
+      { id:'F-20', title:'セキュリティ設定パネル', detail:'URL有効期限 (1h/6h/12h/24h)・最大DL回数 (1/2/3/5)・FIDO2 2FA トグル。常時ON項目の表示。', api:'—', screen:'/' },
+      { id:'F-21', title:'分割アップロード トグル', detail:'ON時は split-parts API フローへ切り替え。', api:'POST /transfer/:id/split-parts', screen:'/' },
+      { id:'F-22', title:'クライアント側 AES-256-GCM 暗号化 ⭐', detail:'Web Crypto API: crypto.subtle.generateKey(AES-GCM) → ファイルをブラウザ内で暗号化。', api:'—', screen:'/' },
+      { id:'F-23', title:'ML-KEM-768 鍵カプセル化 (送信者側) ⭐', detail:'@noble/post-quantum: kyber768.encapsulate(recipientPublicKey) → AES鍵をカプセル化。', api:'—', screen:'/' },
+      { id:'F-24', title:'送信APIフロー (3ステップ)', detail:'① POST /transfer/initiate → ② PUT 暗号化ファイル to SignedURL → ③ POST /transfer/:id/key。', api:'POST /transfer/initiate,key', screen:'/' },
+      { id:'F-25', title:'送信進捗バー & アニメーション', detail:'暗号化中・アップロード中の進捗を progress-bar で表示。ワイヤーフレームのグラデーション再現。', api:'—', screen:'/' },
+      { id:'F-26', title:'送信完了画面 (ワンタイムURL + QRコード)', detail:'生成 URL 表示・コピーボタン・qrcode.react で QR 生成。「サーバにファイルは保持されません」表示。', api:'—', screen:'/' },
+    ]},
+  { id:'P3', label:'Phase 3', name:'送信履歴画面 (SCREEN 2)', badge:'#1d4ed8', bg:'#eff6ff', border:'#bfdbfe', textColor:'#1e3a8a',
+    tasks:[
+      { id:'F-27', title:'送信ファイル管理ページ (カードグリッド)', detail:'4カラムグリッド。thumb-gradient サムネイル・暗号化済みバッジ。', api:'GET /admin/sessions', screen:'/list' },
+      { id:'F-28', title:'ステータスフィルタータブ', detail:'すべて・有効・期限切れ・削除済みの4タブ。ステータス別取得。', api:'GET /admin/sessions?status=', screen:'/list' },
+      { id:'F-29', title:'キーワード検索', detail:'受信者メール・ファイル名でデバウンス検索 (300ms)。', api:'GET /admin/sessions?q=', screen:'/list' },
+      { id:'F-30', title:'有効期限カウントダウンタイマー', detail:'各カードに「残 Xh」リアルタイム更新。期限切れは赤色に変化。', api:'—', screen:'/list' },
+      { id:'F-31', title:'セッション詳細モーダル', detail:'ファイル情報・DL回数・監査ログ表示。フォースデリートボタン付き。', api:'GET /admin/sessions/:id', screen:'/list モーダル' },
+      { id:'F-32', title:'強制削除 (フォースデリート)', detail:'確認ダイアログ → DELETE → 楽観的更新でリスト除去。', api:'DELETE /admin/sessions/:id', screen:'/list' },
+    ]},
+  { id:'P4', label:'Phase 4', name:'受信者ダウンロード画面 (SCREEN 3)', badge:'#047857', bg:'#f0fdf4', border:'#a7f3d0', textColor:'#064e3b',
+    tasks:[
+      { id:'F-33', title:'ダウンロードページ (URLトークン解析)', detail:'/download/:token → GET /download/:token でファイル情報取得・表示。有効期限・DL残回数。', api:'GET /download/:token', screen:'/download/:token' },
+      { id:'F-34', title:'2FA 認証 UI (TOTP / FIDO2 選択)', detail:'生体認証/FIDO2 と TOTP の2択。メールアドレス表示。', api:'—', screen:'/download/:token' },
+      { id:'F-35', title:'TOTP 検証 → auth_token 取得', detail:'6桁入力 → POST /auth/totp/verify → auth_token を一時保存。失敗カウント表示。', api:'POST /auth/totp/verify', screen:'/download/:token' },
+      { id:'F-36', title:'暗号化 AES 鍵取得', detail:'GET /download/:token/key (Bearer auth_token) → encapsulated_key_b64 取得。', api:'GET /download/:token/key', screen:'/download/:token' },
+      { id:'F-37', title:'IndexedDB から Kyber 秘密鍵取得', detail:'userId をキーに IndexedDB から秘密鍵を取得。鍵なし時エラー表示。', api:'—', screen:'/download/:token' },
+      { id:'F-38', title:'ML-KEM-768 脱カプセル化 + AES 復号 ⭐', detail:'kyber768.decapsulate(encKey, privateKey) → AES鍵復元 → crypto.subtle.decrypt() でファイル復号。', api:'—', screen:'/download/:token' },
+      { id:'F-39', title:'復号ファイルのダウンロード + 完了通知', detail:'Blob URL でブラウザ DL 開始 → POST /download/:token/complete → 自動削除確認表示。', api:'POST /download/:token/complete', screen:'/download/:token' },
+    ]},
+  { id:'P5', label:'Phase 5', name:'管理者ダッシュボード (SCREEN 4)', badge:'#c2410c', bg:'#fff7ed', border:'#fed7aa', textColor:'#7c2d12',
+    tasks:[
+      { id:'F-40', title:'管理者ダッシュボード レイアウト', detail:'サイドバー付き: セッション管理・ユーザー管理・監査ログの3セクション。', api:'—', screen:'/admin' },
+      { id:'F-41', title:'セッション一覧 (管理者)', detail:'ページネーション付きテーブル: ID・受信者・ステータス・送信日時・操作。', api:'GET /admin/sessions', screen:'/admin' },
+      { id:'F-42', title:'ユーザー管理テーブル', detail:'ユーザー一覧 (表示名・ロール・作成日・最終ログイン)。削除ボタン付き。', api:'GET /admin/users, DELETE /admin/users/:id', screen:'/admin' },
+      { id:'F-43', title:'監査ログビューワー', detail:'イベント種別・結果・IPアドレス・日時フィルター。CSVエクスポートボタン。', api:'GET /admin/logs, GET /admin/logs/export', screen:'/admin' },
+    ]},
+  { id:'P6', label:'Phase 6', name:'品質・仕上げ', badge:'#9d174d', bg:'#fdf2f8', border:'#f9a8d4', textColor:'#831843',
+    tasks:[
+      { id:'F-44', title:'エラーハンドリング統一', detail:'API・暗号化・鍵なしエラーを toast 通知で統一。全画面共通。', api:'—', screen:'全画面' },
+      { id:'F-45', title:'ローディング・スケルトン UI', detail:'全 API 呼び出しに Suspense / スケルトンカード適用。fade-in-up 再現。', api:'—', screen:'全画面' },
+      { id:'F-46', title:'レスポンシブ対応', detail:'モバイル (sm:) / タブレット (md:) / デスクトップ (lg:) 3ブレークポイント対応。', api:'—', screen:'全画面' },
+      { id:'F-47', title:'E2E 動作確認 (全フロー通し)', detail:'register → login → send → receive の全フローを Playwright または手動で確認。', api:'全エンドポイント', screen:'全画面' },
+      { id:'F-48', title:'docker-compose に frontend サービス追加', detail:'Vite dev server を docker-compose.yml に追加。本番は nginx コンテナで配信。', api:'—', screen:'—' },
+    ]},
+];
+
+// ── ストレージキー ──
+const STORE_KEY = 'zerosend-frontend-progress-v1';
+
+// ── 状態 ──
+let statuses = {};
+let openPhases = {};
+let currentFilter = 'all';
+
+function loadState() {
+  try {
+    const s = JSON.parse(localStorage.getItem(STORE_KEY) || '{}');
+    statuses = s.statuses || {};
+    openPhases = s.openPhases || {};
+  } catch(e) {}
+  // 初期値補完
+  PHASES.forEach(p => p.tasks.forEach(t => {
+    if (!statuses[t.id]) statuses[t.id] = '未着手';
+  }));
+  // デフォルト：全フェーズ展開
+  PHASES.forEach(p => {
+    if (openPhases[p.id] === undefined) openPhases[p.id] = true;
+  });
+}
+
+function saveState() {
+  localStorage.setItem(STORE_KEY, JSON.stringify({ statuses, openPhases }));
+  showToast();
+}
+
+let toastTimer;
+function showToast() {
+  const el = document.getElementById('toast');
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 1400);
+}
+
+// ── 統計 ──
+function calcStats() {
+  const all = Object.values(statuses);
+  const done = all.filter(s => s === '完了').length;
+  const wip  = all.filter(s => s === '進行中').length;
+  const total = all.length;
+  return { done, wip, total, pct: Math.round(done / total * 100) };
+}
+
+function updateHeader() {
+  const { done, wip, total, pct } = calcStats();
+  document.getElementById('pct-display').textContent = pct + '%';
+  document.getElementById('stat-label').textContent = `${done}/${total} 完了 · 進行中 ${wip}`;
+  document.getElementById('global-bar').style.width = pct + '%';
+}
+
+// ── フィルター ──
+function setFilter(btn, filter) {
+  currentFilter = filter;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderAll();
+}
+
+// ── フェーズ開閉 ──
+function togglePhase(phaseId) {
+  openPhases[phaseId] = !openPhases[phaseId];
+  saveState();
+  renderAll();
+}
+
+// ── ステータス変更 ──
+function changeStatus(taskId, val) {
+  statuses[taskId] = val;
+  saveState();
+  updateHeader();
+  renderAll(); // フィルター適用のため再描画
+}
+
+function statusClass(s) {
+  return s === '完了' ? 'status-done' : s === '進行中' ? 'status-wip' : s === '保留' ? 'status-hold' : 'status-todo';
+}
+
+// ── 描画 ──
+function renderAll() {
+  const main = document.getElementById('main');
+  let html = '';
+
+  PHASES.forEach(phase => {
+    const filteredTasks = currentFilter === 'all'
+      ? phase.tasks
+      : phase.tasks.filter(t => statuses[t.id] === currentFilter);
+    if (filteredTasks.length === 0) return;
+
+    const phaseDone  = phase.tasks.filter(t => statuses[t.id] === '完了').length;
+    const phaseTotal = phase.tasks.length;
+    const phasePct   = Math.round(phaseDone / phaseTotal * 100);
+    const isOpen     = openPhases[phase.id];
+
+    html += `
+    <div class="phase" style="border-color:${phase.border}; background:${phase.bg}">
+      <div class="phase-header" onclick="togglePhase('${phase.id}')">
+        <div class="phase-left">
+          <span class="phase-badge" style="background:${phase.badge}">${phase.label}</span>
+          <span class="phase-name" style="color:${phase.textColor}">${phase.name}</span>
+          <span class="phase-count" style="color:${phase.textColor}; opacity:0.6">${phaseDone}/${phaseTotal}</span>
+        </div>
+        <div class="phase-right">
+          <div class="phase-mini-bar">
+            <div class="phase-mini-fill" style="width:${phasePct}%; background:${phase.badge}"></div>
+          </div>
+          <span class="chevron ${isOpen ? 'open' : ''}">▼</span>
+        </div>
+      </div>`;
+
+    if (isOpen) {
+      html += `
+      <div class="phase-body">
+        <table class="phase-table">
+          <thead><tr>
+            <th class="col-id">ID</th>
+            <th class="col-title">タスク名</th>
+            <th class="col-detail">詳細・実装ポイント</th>
+            <th class="col-api">対応 API</th>
+            <th class="col-screen">画面</th>
+            <th class="col-status">状態</th>
+          </tr></thead>
+          <tbody>`;
+
+      filteredTasks.forEach(task => {
+        const s = statuses[task.id];
+        html += `
+          <tr>
+            <td><span class="task-id">${task.id}</span></td>
+            <td><span class="task-title">${task.title}</span></td>
+            <td><span class="task-detail">${task.detail}</span></td>
+            <td><span class="task-api">${task.api}</span></td>
+            <td><span class="task-screen">${task.screen}</span></td>
+            <td>
+              <select class="status-select ${statusClass(s)}"
+                onchange="changeStatus('${task.id}', this.value)"
+                onclick="event.stopPropagation()">
+                <option value="未着手" ${s==='未着手'?'selected':''}>未着手</option>
+                <option value="進行中" ${s==='進行中'?'selected':''}>進行中</option>
+                <option value="完了"   ${s==='完了'  ?'selected':''}>完了</option>
+                <option value="保留"   ${s==='保留'  ?'selected':''}>保留</option>
+              </select>
+            </td>
+          </tr>`;
+      });
+
+      html += `</tbody></table></div>`;
+    }
+
+    html += `</div>`;
+  });
+
+  // 技術スタック
+  html += `
+  <div class="stack-card">
+    <h2>📦 技術スタック</h2>
+    <div class="stack-grid">
+      ${[
+        ['フレームワーク','React 19 + Vite + TypeScript'],
+        ['ルーティング','React Router v7'],
+        ['状態管理','Zustand'],
+        ['サーバー状態','TanStack Query v5'],
+        ['UI','shadcn/ui + Tailwind CSS v4'],
+        ['ファイルアップロード','react-dropzone'],
+        ['量子耐性暗号 (ML-KEM-768)','@noble/post-quantum'],
+        ['対称暗号 (AES-256-GCM)','Web Crypto API (native)'],
+        ['鍵永続化','IndexedDB (idb-keyval)'],
+        ['HTTP クライアント','ky'],
+        ['QR コード','qrcode.react'],
+        ['パッケージマネージャー','pnpm'],
+      ].map(([k,v])=>`<div class="stack-item"><span class="stack-key">${k}:</span><span class="stack-val">${v}</span></div>`).join('')}
+    </div>
+  </div>
+  <div class="security-card">
+    <h3>⚠️ セキュリティ設計上の重要事項（⭐ マーク = 最重要実装）</h3>
+    <ul>
+      <li>Kyber 秘密鍵は <strong>IndexedDB のみ</strong>に保存。サーバには一切送信しない。</li>
+      <li>AES 鍵の生成・暗号化・復号は <strong>全てブラウザ内</strong>で完結する。</li>
+      <li>サーバーはカプセル化済み AES 鍵のみ保持。平文鍵・ファイル内容は保持しない。</li>
+      <li>F-22〜F-23 (送信側暗号化) と F-37〜F-38 (受信側復号) がゼロ保持設計の核心。</li>
+    </ul>
+  </div>`;
+
+  main.innerHTML = html;
+}
+
+// ── 初期化 ──
+loadState();
+renderAll();
+updateHeader();
+</script>
+</body>
+</html>

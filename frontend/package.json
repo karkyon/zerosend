@@ -1,17 +1,40 @@
 {
-  "name": "@zerosend/frontend",
-  "version": "0.1.0",
-  "description": "ZeroSend — Frontend Web Application (TBD)",
-  "private": true,
+  "name": "zerosend-frontend",
+  "version": "0.0.1",
+  "type": "module",
   "scripts": {
-    "dev":   "echo 'frontend: TBD'",
-    "build": "echo 'frontend: TBD'"
+    "dev":     "vite",
+    "build":   "tsc && vite build",
+    "preview": "vite preview",
+    "type-check": "tsc --noEmit"
   },
-  "dependencies": {},
-  "devDependencies": {},
+  "dependencies": {
+    "@noble/post-quantum": "^0.5.4",
+    "@tailwindcss/vite": "^4.2.0",
+    "@tanstack/react-query": "^5.90.21",
+    "@tanstack/react-query-devtools": "^5.91.3",
+    "clsx": "^2.1.1",
+    "idb-keyval": "^6.2.2",
+    "ky": "^1.14.3",
+    "lucide-react": "^0.575.0",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "react-router-dom": "^7.13.0",
+    "tailwind-merge": "^3.5.0",
+    "tailwindcss": "^4.2.0",
+    "zustand": "^5.0.11"
+  },
   "_comment": [
     "フロントエンドフレームワーク・ビルドツールは設計書策定後に追加予定。",
     "候補: Next.js / Vite+React / SvelteKit など。",
     "Kyber-768 鍵生成・AES-256-GCM 暗号化は全てクライアント側で実行する。"
-  ]
+  ],
+  "devDependencies": {
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.1.4",
+    "path": "^0.12.7",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1"
+  }
 }

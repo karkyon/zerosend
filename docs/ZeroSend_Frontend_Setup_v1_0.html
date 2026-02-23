@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZeroSend フロントエンド構築手順書 v1.0 — Phase 0 基盤構築</title>
+<style>
+:root{
+  --navy:#0F2744;--blue:#2563EB;--blue-l:#EFF6FF;
+  --green:#15803D;--green-l:#ECFDF5;--green-b:#A7F3D0;
+  --amber:#B45309;--amber-l:#FFFBEB;
+  --red:#B91C1C;--red-l:#FEF2F2;
+  --purple:#7C3AED;--purple-l:#F5F3FF;
+  --teal:#0D9488;--teal-l:#F0FDFA;
+  --orange:#EA580C;--orange-l:#FFF7ED;
+  --gray:#6B7280;--light:#F8FAFC;
+  --border:#E2E8F0;--code:#1E293B;--codefg:#E2E8F0;
+  --done:#065F46;--done-l:#ECFDF5;--done-b:#A7F3D0;
+  --indigo:#4338CA;--indigo-l:#EEF2FF;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;font-size:14px;color:#1E293B;background:#F1F5F9;line-height:1.65}
+.wrap{max-width:1060px;margin:0 auto;padding:32px 24px}
+
+.cover{background:linear-gradient(135deg,#0F2744 0%,#1E3A5F 60%,#312e81 100%);color:#fff;padding:52px 44px;border-radius:16px;margin-bottom:36px;box-shadow:0 12px 40px rgba(0,0,0,.25)}
+.cover h1{font-size:34px;font-weight:900;letter-spacing:-.5px;line-height:1.25}
+.cover .en{font-size:13px;color:#a5b4fc;margin-top:5px}
+.vbadge{display:inline-block;background:var(--teal);padding:5px 16px;border-radius:20px;font-size:13px;font-weight:700;margin-top:14px}
+.part-badge{display:inline-block;background:#7C3AED;padding:5px 16px;border-radius:20px;font-size:13px;font-weight:700;margin-top:8px;margin-left:8px}
+.cg{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:24px}
+.ci{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:10px 14px}
+.ci .l{font-size:10px;color:#a5b4fc;text-transform:uppercase;letter-spacing:.06em}
+.ci .v{font-family:'Courier New',monospace;font-size:11.5px;color:#fff;margin-top:3px}
+
+.nav{background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin-bottom:24px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.nav .nt{font-weight:700;color:var(--navy);font-size:13px;margin-bottom:8px}
+
+h1.s{font-size:22px;font-weight:800;color:var(--navy);border-bottom:3px solid var(--blue);padding-bottom:8px;margin:40px 0 18px}
+h2.s{font-size:16px;font-weight:700;color:var(--navy);border-left:5px solid var(--blue);padding-left:10px;margin:24px 0 10px}
+h3.s{font-size:13px;font-weight:700;color:var(--teal);margin:16px 0 8px;padding-left:6px;border-left:3px solid var(--teal)}
+p{font-size:13px;color:#374151;margin:5px 0 8px;line-height:1.7}
+ul,ol{padding-left:20px;font-size:13px;color:#374151;margin:6px 0}
+li{margin:3px 0}
+
+.step{display:flex;border-radius:10px;overflow:hidden;border:1px solid var(--border);margin:20px 0 14px;box-shadow:0 1px 4px rgba(0,0,0,.07)}
+.sn{padding:14px 16px;font-weight:800;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:76px}
+.sn .sl{font-size:9px;text-transform:uppercase;letter-spacing:.1em;opacity:.75}
+.sn .sv{font-size:26px;line-height:1}
+.sb{padding:12px 18px;flex:1}
+.sb .st{font-size:15px;font-weight:700}
+.sb .ss{font-size:12px;color:var(--gray);margin-top:3px}
+.step.todo .sn{background:var(--purple);color:#fff}.step.todo .sb{background:var(--purple-l)}.step.todo .st{color:var(--purple)}
+.step.done .sn{background:var(--done);color:#fff}.step.done .sb{background:var(--done-l)}.step.done .st{color:var(--done)}
+.step.info .sn{background:var(--indigo);color:#fff}.step.info .sb{background:var(--indigo-l)}.step.info .st{color:var(--indigo)}
+
+.box{border-radius:8px;padding:12px 16px;margin:10px 0;border-left:5px solid;font-size:13px}
+.box .bt{font-weight:700;font-size:11px;margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em}
+.box p,.box li{margin:3px 0;line-height:1.6}
+.box ul,.box ol{padding-left:18px}
+.tip{background:var(--blue-l);border-color:var(--blue)}.tip .bt{color:var(--blue)}
+.ok{background:var(--done-l);border-color:var(--done)}.ok .bt{color:var(--done)}
+.warn{background:var(--amber-l);border-color:var(--amber)}.warn .bt{color:var(--amber)}
+.err{background:var(--red-l);border-color:var(--red)}.err .bt{color:var(--red)}
+.new{background:var(--teal-l);border-color:var(--teal)}.new .bt{color:var(--teal)}
+.sec{background:#FDF4FF;border-color:#A855F7}.sec .bt{color:#7C3AED}
+
+.clbl{font-size:11px;color:#94A3B8;font-family:'Courier New',monospace;background:#0F172A;border:1px solid #334155;border-bottom:none;padding:5px 14px;border-radius:8px 8px 0 0;display:inline-block;margin-top:8px}
+pre{background:var(--code);border:1px solid #334155;border-radius:0 8px 8px 8px;padding:16px 18px;font-family:'Courier New',monospace;font-size:12.5px;color:var(--codefg);line-height:1.85;overflow-x:auto;margin:0 0 14px;white-space:pre}
+pre .cm{color:#64748B}
+pre .ok-t{color:#4ADE80}
+pre .warn-t{color:#FCD34D}
+pre .err-t{color:#F87171}
+pre .hl{color:#93C5FD}
+pre .str{color:#86EFAC}
+pre .kw{color:#C084FC}
+
+.result{background:#0a1628;border:1px solid #1e3a5f;border-radius:8px;padding:14px 18px;font-family:'Courier New',monospace;font-size:12px;color:#93C5FD;line-height:1.8;margin:0 0 14px;white-space:pre}
+.result .ok-r{color:#4ADE80}
+.result .warn-r{color:#FCD34D}
+
+table{width:100%;border-collapse:collapse;font-size:13px;margin:12px 0;border-radius:8px;overflow:hidden;box-shadow:0 1px 6px rgba(0,0,0,.08)}
+th{background:var(--navy);color:#fff;padding:9px 13px;text-align:left;font-size:12px;font-weight:600}
+td{padding:8px 13px;border-bottom:1px solid var(--border);vertical-align:top}
+tr:nth-child(even) td{background:var(--light)}
+td code{font-family:'Courier New',monospace;font-size:11.5px;background:#EFF6FF;color:var(--navy);padding:1px 5px;border-radius:3px}
+.dc{color:var(--done);font-weight:700}
+.wc{color:var(--amber);font-weight:700}
+
+.tree{background:var(--code);border:1px solid #334155;border-radius:10px;padding:18px 22px;font-family:'Courier New',monospace;font-size:12.5px;color:var(--codefg);line-height:2;margin:12px 0;overflow-x:auto}
+.tree .d{color:#93C5FD;font-weight:700}
+.tree .f{color:#86EFAC}
+.tree .fc{color:#FCD34D}
+.tree .cm{color:#64748B}
+
+.badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;margin:0 2px}
+.b-new{background:#DCFCE7;color:#15803D}
+.b-edit{background:#DBEAFE;color:#1D4ED8}
+.b-skip{background:#F3F4F6;color:#6B7280}
+
+.file-card{background:#fff;border:1px solid var(--border);border-radius:10px;margin:14px 0;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.07)}
+.file-card .fc-head{background:#0F172A;padding:10px 18px;display:flex;align-items:center;gap:10px}
+.file-card .fc-path{font-family:'Courier New',monospace;font-size:12.5px;color:#93C5FD;font-weight:700}
+.file-card .fc-badge{font-size:10px;background:#1E3A5F;color:#60A5FA;padding:2px 8px;border-radius:10px}
+.file-card .fc-body{padding:14px 18px;font-size:13px;color:#374151}
+.file-card .fc-desc{margin-bottom:8px;line-height:1.7}
+.file-card .fc-deps{font-size:12px;color:#6B7280;font-family:'Courier New',monospace;background:#F8FAFC;border-radius:6px;padding:8px 12px;border:1px solid var(--border)}
+
+hr.pb{border:none;border-top:2px dashed var(--border);margin:44px 0}
+.num{display:inline-block;background:var(--blue);color:#fff;width:22px;height:22px;border-radius:50%;text-align:center;line-height:22px;font-size:12px;font-weight:700;margin-right:6px}
+.tag-f{display:inline-block;background:var(--indigo-l);color:var(--indigo);font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;margin-left:6px;border:1px solid #C7D2FE}
+</style>
+</head>
+<body><div class="wrap">
+
+<!-- ═══ COVER ═══ -->
+<div class="cover">
+  <div>
+    <span class="vbadge">v1.0</span>
+    <span class="part-badge">Phase 0 — 基盤構築 F-01〜F-10</span>
+  </div>
+  <h1 style="margin-top:16px">ZeroSend<br>フロントエンド構築手順書</h1>
+  <p class="en">Next-Generation Zero-Retention Quantum-Resistant File Transfer — Frontend Setup Guide</p>
+  <div class="cg">
+    <div class="ci"><div class="l">対象ディレクトリ</div><div class="v">~/projects/zerosend/frontend/</div></div>
+    <div class="ci"><div class="l">Node.js / pnpm</div><div class="v">v20.x 以上 / v10.x 以上</div></div>
+    <div class="ci"><div class="l">React / Vite</div><div class="v">19.x / 7.x</div></div>
+    <div class="ci"><div class="l">Tailwind CSS</div><div class="v">v4.x</div></div>
+    <div class="ci"><div class="l">TypeScript</div><div class="v">strict モード</div></div>
+    <div class="ci"><div class="l">状態管理</div><div class="v">Zustand v5</div></div>
+    <div class="ci"><div class="l">暗号ライブラリ</div><div class="v">@noble/post-quantum</div></div>
+    <div class="ci"><div class="l">鍵永続化</div><div class="v">idb-keyval (IndexedDB)</div></div>
+  </div>
+</div>
+
+<!-- ═══ 概要 ═══ -->
+<div class="nav">
+  <div class="nt">📋 この手順書の対象タスク（F-01〜F-10）</div>
+  <p style="margin-top:6px;font-size:12px;color:#374151">
+    F-01 Viteプロジェクト初期化 &nbsp;/&nbsp;
+    F-02 Tailwind CSS v4 + shadcn/ui &nbsp;/&nbsp;
+    F-03 環境変数設定 &nbsp;/&nbsp;
+    F-04 APIクライアント基盤 (ky) &nbsp;/&nbsp;
+    F-05 TypeScript型定義 &nbsp;/&nbsp;
+    F-06 Zustandストア雛形 &nbsp;/&nbsp;
+    F-07 React Router v7 &nbsp;/&nbsp;
+    F-08 共通ナビゲーションバー &nbsp;/&nbsp;
+    F-09 IndexedDBユーティリティ &nbsp;/&nbsp;
+    F-10 TanStack Query セットアップ
+  </p>
+</div>
+
+<div class="box warn">
+  <div class="bt">⚠️ 前提条件</div>
+  <p>バックエンドの開発環境（ZeroSend_DevEnv_Setup_v7.0）が完成し、<code>docker compose up -d</code> で zerosend-api が起動済みであること。Node.js v20 以上 / pnpm v10 以上がインストール済みであること。</p>
+</div>
+
+<hr class="pb">
+
+<!-- ═══ STEP 1: ディレクトリ作成 ═══ -->
+<h1 class="s" id="step1">STEP 1 — ディレクトリ構造の作成</h1>
+
+<div class="step todo">
+  <div class="sn"><div class="sl">STEP</div><div class="sv">1</div></div>
+  <div class="sb">
+    <div class="st">frontend/ ディレクトリと src/ 内の全サブディレクトリを作成する</div>
+    <div class="ss">pnpm create vite が作る scaffold を使わず、手動で構成を作る</div>
+  </div>
+</div>
+
+<h2 class="s">1.1 zerosend プロジェクトルートへ移動</h2>
+<div class="clbl">ターミナル</div>
+<pre>
+cd ~/projects/zerosend
+</pre>
+
+<h2 class="s">1.2 frontend/ 配下のディレクトリを一括作成</h2>
+<p>以下の1コマンドで必要なディレクトリをすべて作成します。</p>
+<div class="clbl">ディレクトリ一括作成</div>
+<pre>
+mkdir -p frontend/src/{types,lib,stores,hooks,utils} \
+         frontend/src/components/{ui,layout,shared} \
+         frontend/src/pages/{send,list,download,admin,login} \
+         frontend/public
+</pre>
+
+<h2 class="s">1.3 作成後のディレクトリ構造確認</h2>
+<div class="clbl">確認</div>
+<pre>
+find frontend -type d | sort
+</pre>
+
+<div class="result">frontend
+frontend/public
+frontend/src
+frontend/src/components
+frontend/src/components/layout
+frontend/src/components/shared
+frontend/src/components/ui
+frontend/src/hooks
+frontend/src/lib
+frontend/src/pages
+frontend/src/pages/admin
+frontend/src/pages/download
+frontend/src/pages/list
+frontend/src/pages/login
+frontend/src/pages/send
+frontend/src/stores
+frontend/src/types
+frontend/src/utils</div>
+
+<div class="box ok"><div class="bt">✅ STEP 1 完了確認</div><p>上記のディレクトリが全て表示されれば OK。</p></div>
+
+<hr class="pb">
+
+<!-- ═══ STEP 2: pnpm init + パッケージインストール ═══ -->
+<h1 class="s" id="step2">STEP 2 — pnpm init とパッケージインストール</h1>
+
+<div class="step todo">
+  <div class="sn"><div class="sl">STEP</div><div class="sv">2</div></div>
+  <div class="sb">
+    <div class="st">package.json 生成 → 全パッケージを一括インストール</div>
+    <div class="ss">F-01〜F-10 で必要な全パッケージをここでインストール完了させる</div>
+  </div>
+</div>
+
+<h2 class="s">2.1 frontend/ に移動して pnpm init</h2>
+<div class="clbl">pnpm初期化</div>
+<pre>
+cd ~/projects/zerosend/frontend
+pnpm init
+</pre>
+
+<div class="box tip"><div class="bt">ℹ️ pnpm init について</div><p>package.json が生成されます。name / version 等は後で編集します。対話形式の質問はすべて Enter で進めて構いません。</p></div>
+
+<h2 class="s">2.2 .npmrc 作成（ビルドスクリプト許可）</h2>
+<div class="clbl">.npmrc 作成</div>
+<pre>
+<span class="cm"># pnpm のビルドスクリプト（esbuild 等）を許可する設定</span>
+echo 'approve-builds=true' > .npmrc
+</pre>
+
+<h2 class="s">2.3 本番依存パッケージを一括インストール</h2>
+<div class="box tip"><div class="bt">ℹ️ インストール所要時間</div><p>環境によって 1〜3 分かかります。エラーが出た場合は STEP 2.6 のトラブルシューティングを参照してください。</p></div>
+
+<div class="clbl">本番パッケージ（フレームワーク・UI・暗号・通信）</div>
+<pre>
+pnpm add \
+  react@^19 \
+  react-dom@^19 \
+  react-router-dom@^7 \
+  zustand \
+  ky \
+  @tanstack/react-query \
+  @tanstack/react-query-devtools \
+  idb-keyval \
+  tailwindcss@^4 \
+  @tailwindcss/vite \
+  clsx \
+  tailwind-merge \
+  lucide-react \
+  @noble/post-quantum
+</pre>
+
+<h2 class="s">2.4 開発依存パッケージを一括インストール</h2>
+<div class="clbl">開発用パッケージ（TypeScript・型定義・Vite・プラグイン）</div>
+<pre>
+pnpm add -D \
+  typescript \
+  @types/react@^19 \
+  @types/react-dom@^19 \
+  @vitejs/plugin-react \
+  vite \
+  path
+</pre>
+
+<h2 class="s">2.5 package.json の scripts を編集</h2>
+<p>生成された <code>package.json</code> を開き、<code>scripts</code> セクションを以下に書き換えます（VSCode等で編集）。</p>
+<div class="clbl">frontend/package.json — scripts セクションのみ抜粋</div>
+<pre>
+{
+  <span class="str">"name"</span>: <span class="str">"zerosend-frontend"</span>,
+  <span class="str">"version"</span>: <span class="str">"0.0.1"</span>,
+  <span class="str">"type"</span>: <span class="str">"module"</span>,
+  <span class="str">"scripts"</span>: {
+    <span class="str">"dev"</span>:     <span class="str">"vite"</span>,
+    <span class="str">"build"</span>:   <span class="str">"tsc && vite build"</span>,
+    <span class="str">"preview"</span>: <span class="str">"vite preview"</span>,
+    <span class="str">"type-check"</span>: <span class="str">"tsc --noEmit"</span>
+  },
+  ...
+}
+</pre>
+
+<h2 class="s">2.6 インストール確認</h2>
+<div class="clbl">バージョン確認</div>
+<pre>
+<span class="cm"># インストール済みパッケージの確認</span>
+pnpm list --depth=0
+
+<span class="cm"># 主要パッケージのバージョン確認</span>
+node -e "console.log(require('./node_modules/react/package.json').version)"
+<span class="cm"># 19.x.x が表示されること</span>
+</pre>
+
+<div class="box ok"><div class="bt">✅ STEP 2 完了確認</div><p><code>node_modules/</code> が作成され、<code>pnpm list</code> で全パッケージが表示されれば OK。</p></div>
+
+<div class="box err"><div class="bt">❌ エラーが出た場合</div>
+<p><strong>「ENOTFOUND registry.npmjs.org」:</strong> ネットワーク接続を確認。</p>
+<p><strong>「Permission denied」:</strong> <code>sudo</code> は不要。<code>pnpm config set store-dir ~/.pnpm-store</code> を実行して再試行。</p>
+<p><strong>「pnpm: command not found」:</strong> <code>npm install -g pnpm</code> を実行してから再試行。</p>
+</div>
+
+<hr class="pb">
+
+<!-- ═══ STEP 3: 設定ファイルの配置 ═══ -->
+<h1 class="s" id="step3">STEP 3 — 設定ファイルの作成・配置 <span class="tag-f">F-01</span><span class="tag-f">F-02</span><span class="tag-f">F-03</span></h1>
+
+<div class="step todo">
+  <div class="sn"><div class="sl">STEP</div><div class="sv">3</div></div>
+  <div class="sb">
+    <div class="st">vite.config.ts / tsconfig.json / index.html / .env ファイルを作成する</div>
+    <div class="ss">以下のファイルを <code>frontend/</code> 直下に配置する</div>
+  </div>
+</div>
+
+<div class="box warn"><div class="bt">⚠️ 作業ディレクトリの確認</div><p>以降のファイル配置はすべて <code>~/projects/zerosend/frontend/</code> が起点です。<code>pwd</code> でカレントディレクトリを確認してから作業してください。</p></div>
+
+<p>以下の4ファイルを <code>frontend/</code> 直下（<code>src/</code> の外、<code>package.json</code> と同じ階層）に配置します。</p>
+
+<!-- vite.config.ts -->
+<div class="file-card">
+  <div class="fc-head">
+    <span class="fc-path">frontend/vite.config.ts</span>
+    <span class="fc-badge">新規作成</span>
+  </div>
+  <div class="fc-body">
+    <p class="fc-desc">Vite の設定ファイル。React プラグイン・Tailwind CSS v4 プラグイン・<code>@/</code> パスエイリアス・開発サーバーのポート(3000)とバックエンドプロキシ(8000)を設定します。</p>
+    <p><strong>ファイル内容：</strong></p>
+  </div>
+</div>
+<div class="clbl">frontend/vite.config.ts</div>
+<pre>
+<span class="kw">import</span> { defineConfig } <span class="kw">from</span> <span class="str">'vite'</span>
+<span class="kw">import</span> react <span class="kw">from</span> <span class="str">'@vitejs/plugin-react'</span>
+<span class="kw">import</span> tailwindcss <span class="kw">from</span> <span class="str">'@tailwindcss/vite'</span>
+<span class="kw">import</span> path <span class="kw">from</span> <span class="str">'node:path'</span>
+
+<span class="kw">export default</span> defineConfig({
+  plugins: [
+    react(),
+    tailwindcss(),
+  ],
+  resolve: {
+    alias: {
+      <span class="str">'@'</span>: path.resolve(__dirname, <span class="str">'./src'</span>),
+    },
+  },
+  server: {
+    port: 3000,
+    proxy: {
+      <span class="str">'/api'</span>: {
+        target: <span class="str">'http://localhost:8000'</span>,
+        changeOrigin: <span class="kw">true</span>,
+      },
+    },
+  },
+})
+</pre>
+
+<!-- tsconfig.json -->
+<div class="file-card">
+  <div class="fc-head">
+    <span class="fc-path">frontend/tsconfig.json</span>
+    <span class="fc-badge">新規作成</span>
+  </div>
+  <div class="fc-body">
+    <p class="fc-desc">TypeScript の設定ファイル。<code>strict</code> モード・<code>@/</code> パスエイリアス・<code>jsx: react-jsx</code> を設定します。</p>
+  </div>
+</div>
+<div class="clbl">frontend/tsconfig.json</div>
+<pre>
+{
+  <span class="str">"compilerOptions"</span>: {
+    <span class="str">"baseUrl"</span>: <span class="str">"."</span>,
+    <span class="str">"paths"</span>: { <span class="str">"@/*"</span>: [<span class="str">"./src/*"</span>] },
+    <span class="str">"jsx"</span>: <span class="str">"react-jsx"</span>,
+    <span class="str">"target"</span>: <span class="str">"ES2022"</span>,
+    <span class="str">"useDefineForClassFields"</span>: <span class="kw">true</span>,
+    <span class="str">"module"</span>: <span class="str">"ESNext"</span>,
+    <span class="str">"lib"</span>: [<span class="str">"ES2022"</span>, <span class="str">"DOM"</span>, <span class="str">"DOM.Iterable"</span>],
+    <span class="str">"skipLibCheck"</span>: <span class="kw">true</span>,
+    <span class="str">"moduleResolution"</span>: <span class="str">"bundler"</span>,
+    <span class="str">"allowImportingTsExtensions"</span>: <span class="kw">true</span>,
+    <span class="str">"verbatimModuleSyntax"</span>: <span class="kw">true</span>,
+    <span class="str">"moduleDetection"</span>: <span class="str">"force"</span>,
+    <span class="str">"noEmit"</span>: <span class="kw">true</span>,
+    <span class="str">"strict"</span>: <span class="kw">true</span>,
+    <span class="str">"noUnusedLocals"</span>: <span class="kw">true</span>,
+    <span class="str">"noUnusedParameters"</span>: <span class="kw">true</span>,
+    <span class="str">"erasableSyntaxOnly"</span>: <span class="kw">true</span>,
+    <span class="str">"noFallthroughCasesInSwitch"</span>: <span class="kw">true</span>,
+    <span class="str">"noUncheckedSideEffectImports"</span>: <span class="kw">true</span>
+  },
+  <span class="str">"include"</span>: [<span class="str">"src"</span>]
+}
+</pre>
+
+<!-- index.html -->
+<div class="file-card">
+  <div class="fc-head">
+    <span class="fc-path">frontend/index.html</span>
+    <span class="fc-badge">新規作成</span>
+  </div>
+  <div class="fc-body">
+    <p class="fc-desc">Vite のエントリポイント HTML。Google Fonts（Noto Sans JP / DM Mono）を読み込みます。<code>&lt;div id="root"&gt;</code> が React のマウントポイントです。</p>
+  </div>
+</div>
+<div class="clbl">frontend/index.html</div>
+<pre>
+&lt;!doctype html&gt;
+&lt;html lang=<span class="str">"ja"</span>&gt;
+  &lt;head&gt;
+    &lt;meta charset=<span class="str">"UTF-8"</span> /&gt;
+    &lt;meta name=<span class="str">"viewport"</span> content=<span class="str">"width=device-width, initial-scale=1.0"</span> /&gt;
+    &lt;meta name=<span class="str">"description"</span> content=<span class="str">"ZeroSend - 量子耐性暗号ファイル転送サービス"</span> /&gt;
+    &lt;title&gt;ZeroSend — Quantum-Safe File Transfer&lt;/title&gt;
+    &lt;link rel=<span class="str">"preconnect"</span> href=<span class="str">"https://fonts.googleapis.com"</span> /&gt;
+    &lt;link rel=<span class="str">"preconnect"</span> href=<span class="str">"https://fonts.gstatic.com"</span> crossorigin /&gt;
+    &lt;link href=<span class="str">"https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&amp;family=DM+Mono:ital,wght@0,400;0,500;1,400&amp;display=swap"</span> rel=<span class="str">"stylesheet"</span> /&gt;
+  &lt;/head&gt;
+  &lt;body&gt;
+    &lt;div id=<span class="str">"root"</span>&gt;&lt;/div&gt;
+    &lt;script type=<span class="str">"module"</span> src=<span class="str">"/src/main.tsx"</span>&gt;&lt;/script&gt;
+  &lt;/body&gt;
+&lt;/html&gt;
+</pre>
+
+<!-- .env.local -->
+<div class="file-card">
+  <div class="fc-head">
+    <span class="fc-path">frontend/.env.local</span>
+    <span class="fc-badge">新規作成</span>
+  </div>
+  <div class="fc-body">
+    <p class="fc-desc">開発環境の環境変数。<code>VITE_</code> プレフィックスがついた変数のみブラウザのコードから <code>import.meta.env.VITE_〇〇</code> でアクセス可能です。<strong>Git 管理対象外（.gitignore に含まれています）。</strong></p>
+  </div>
+</div>
+<div class="clbl">frontend/.env.local</div>
+<pre>
+VITE_API_BASE_URL=http://localhost:8000/api/v1
+VITE_APP_TITLE=ZeroSend
+VITE_APP_VERSION=1.0.0
+</pre>
+
+<div class="clbl">frontend/.env.example（Git管理対象・テンプレート）</div>
+<pre>
+VITE_API_BASE_URL=http://localhost:8000/api/v1
+VITE_APP_TITLE=ZeroSend
+VITE_APP_VERSION=1.0.0
+</pre>
+
+<div class="clbl">frontend/.gitignore に追記確認</div>
+<pre>
+<span class="cm"># .gitignore に以下の行があることを確認（なければ追記）</span>
+cat .gitignore | grep env
+<span class="cm"># .env.local が含まれていること</span>
+
+<span class="cm"># なければ追記</span>
+echo '.env.local' >> .gitignore
+echo '.env.production' >> .gitignore
+</pre>
+
+<div class="box ok"><div class="bt">✅ STEP 3 完了確認</div>
+<p><code>frontend/</code> 直下に以下の4ファイルが存在すること。</p>
+<ul style="margin-top:6px">
+  <li><code>vite.config.ts</code></li>
+  <li><code>tsconfig.json</code></li>
+  <li><code>index.html</code></li>
+  <li><code>.env.local</code></li>
+  <li><code>.env.example</code></li>
+</ul>
+</div>
+
+<hr class="pb">
+
+<!-- ═══ STEP 4: src/ ファイルの配置 ═══ -->
+<h1 class="s" id="step4">STEP 4 — src/ 内ファイルの配置</h1>
+
+<div class="step todo">
+  <div class="sn"><div class="sl">STEP</div><div class="sv">4</div></div>
+  <div class="sb">
+    <div class="st">Claude が生成した全ソースファイルを正しいパスに配置する</div>
+    <div class="ss">ダウンロードしたファイルを以下の対応表に従って配置する</div>
+  </div>
+</div>
+
+<div class="box warn"><div class="bt">⚠️ 配置の注意事項</div>
+<ul>
+  <li>ファイルは <strong>コピー</strong> して配置（既存ファイルがある場合は上書き）</li>
+  <li>ファイル名・拡張子を変更しないこと（<code>.ts</code> と <code>.tsx</code> を混同しない）</li>
+  <li>ヘッダーコメントの <code>パス</code> 行を見れば正しい配置先がわかります</li>
+</ul>
+</div>
+
+<h2 class="s">4.1 配置ファイル一覧と対応パス</h2>
+
+<table>
+  <tr>
+    <th>ファイル名</th>
+    <th>配置先パス（zerosend/ からの相対パス）</th>
+    <th>対応タスク</th>
+    <th>役割</th>
+  </tr>
+  <tr>
+    <td><code>index.css</code></td>
+    <td><code>frontend/src/index.css</code></td>
+    <td><span class="tag-f">F-02</span></td>
+    <td>Tailwind v4 + ブランドカラー定義</td>
+  </tr>
+  <tr>
+    <td><code>main.tsx</code></td>
+    <td><code>frontend/src/main.tsx</code></td>
+    <td><span class="tag-f">F-01</span></td>
+    <td>React 19 エントリポイント</td>
+  </tr>
+  <tr>
+    <td><code>App.tsx</code></td>
+    <td><code>frontend/src/App.tsx</code></td>
+    <td><span class="tag-f">F-07</span></td>
+    <td>React Router v7 ルーティング</td>
+  </tr>
+  <tr>
+    <td><code>api.ts</code></td>
+    <td><code>frontend/src/types/api.ts</code></td>
+    <td><span class="tag-f">F-05</span></td>
+    <td>全APIレスポンス型定義</td>
+  </tr>
+  <tr>
+    <td><code>apiClient.ts</code></td>
+    <td><code>frontend/src/lib/apiClient.ts</code></td>
+    <td><span class="tag-f">F-04</span></td>
+    <td>ky APIクライアント基盤</td>
+  </tr>
+  <tr>
+    <td><code>keyStorage.ts</code></td>
+    <td><code>frontend/src/lib/keyStorage.ts</code></td>
+    <td><span class="tag-f">F-09</span></td>
+    <td>IndexedDB 秘密鍵永続化</td>
+  </tr>
+  <tr>
+    <td><code>queryClient.ts</code></td>
+    <td><code>frontend/src/lib/queryClient.ts</code></td>
+    <td><span class="tag-f">F-10</span></td>
+    <td>TanStack Query 設定</td>
+  </tr>
+  <tr>
+    <td><code>authStore.ts</code></td>
+    <td><code>frontend/src/stores/authStore.ts</code></td>
+    <td><span class="tag-f">F-06</span></td>
+    <td>JWT / ユーザー状態管理</td>
+  </tr>
+  <tr>
+    <td><code>transferStore.ts</code></td>
+    <td><code>frontend/src/stores/transferStore.ts</code></td>
+    <td><span class="tag-f">F-06</span></td>
+    <td>ファイル送信フロー状態管理</td>
+  </tr>
+  <tr>
+    <td><code>keyStore.ts</code></td>
+    <td><code>frontend/src/stores/keyStore.ts</code></td>
+    <td><span class="tag-f">F-06</span></td>
+    <td>ML-KEM-768 鍵ペアキャッシュ</td>
+  </tr>
+  <tr>
+    <td><code>ProtectedRoute.tsx</code></td>
+    <td><code>frontend/src/components/layout/ProtectedRoute.tsx</code></td>
+    <td><span class="tag-f">F-07</span></td>
+    <td>認証ガード HOC</td>
+  </tr>
+  <tr>
+    <td><code>Navbar.tsx</code></td>
+    <td><code>frontend/src/components/layout/Navbar.tsx</code></td>
+    <td><span class="tag-f">F-08</span></td>
+    <td>共通ナビゲーションバー</td>
+  </tr>
+</table>
+
+<h2 class="s">4.2 ページプレースホルダーの作成</h2>
+<p>以下の5ページは Phase 1 以降で実装します。今は <strong>プレースホルダー</strong> を作成するだけです。以下のコマンドを <code>frontend/</code> で実行してください。</p>
+
+<div class="clbl">プレースホルダーページ一括作成コマンド（frontend/ で実行）</div>
+<pre>
+<span class="cm"># frontend/ ディレクトリにいることを確認</span>
+pwd
+<span class="cm"># /home/karkyon/projects/zerosend/frontend</span>
+
+<span class="cm"># SendPage.tsx</span>
+cat > src/pages/SendPage.tsx &lt;&lt; 'EOF'
+export function SendPage() {
+  return (
+    &lt;div style={{display:'flex',alignItems:'center',justifyContent:'center',minHeight:'80vh'}}&gt;
+      &lt;div style={{textAlign:'center'}}&gt;
+        &lt;h1 style={{fontSize:'1.5rem',fontWeight:'700',color:'#6366f1'}}&gt;ファイル送信&lt;/h1&gt;
+        &lt;p style={{color:'#94a3b8',marginTop:'8px'}}&gt;Phase 2 で実装予定&lt;/p&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  )
+}
+EOF
+
+<span class="cm"># ListPage.tsx</span>
+cat > src/pages/ListPage.tsx &lt;&lt; 'EOF'
+export function ListPage() {
+  return (
+    &lt;div style={{display:'flex',alignItems:'center',justifyContent:'center',minHeight:'80vh'}}&gt;
+      &lt;div style={{textAlign:'center'}}&gt;
+        &lt;h1 style={{fontSize:'1.5rem',fontWeight:'700',color:'#6366f1'}}&gt;送信履歴&lt;/h1&gt;
+        &lt;p style={{color:'#94a3b8',marginTop:'8px'}}&gt;Phase 3 で実装予定&lt;/p&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  )
+}
+EOF
+
+<span class="cm"># AdminPage.tsx</span>
+cat > src/pages/AdminPage.tsx &lt;&lt; 'EOF'
+export function AdminPage() {
+  return (
+    &lt;div style={{display:'flex',alignItems:'center',justifyContent:'center',minHeight:'80vh'}}&gt;
+      &lt;div style={{textAlign:'center'}}&gt;
+        &lt;h1 style={{fontSize:'1.5rem',fontWeight:'700',color:'#6366f1'}}&gt;管理者ダッシュボード&lt;/h1&gt;
+        &lt;p style={{color:'#94a3b8',marginTop:'8px'}}&gt;Phase 5 で実装予定&lt;/p&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  )
+}
+EOF
+
+<span class="cm"># LoginPage.tsx</span>
+cat > src/pages/LoginPage.tsx &lt;&lt; 'EOF'
+export function LoginPage() {
+  return (
+    &lt;div style={{display:'flex',alignItems:'center',justifyContent:'center',minHeight:'100vh'}}&gt;
+      &lt;div style={{textAlign:'center'}}&gt;
+        &lt;h1 style={{fontSize:'1.5rem',fontWeight:'700',color:'#6366f1'}}&gt;ログイン&lt;/h1&gt;
+        &lt;p style={{color:'#94a3b8',marginTop:'8px'}}&gt;Phase 1 で実装予定&lt;/p&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  )
+}
+EOF
+
+<span class="cm"># DownloadPage.tsx（:token パラメータあり）</span>
+cat > src/pages/DownloadPage.tsx &lt;&lt; 'EOF'
+import { useParams } from 'react-router-dom'
+export function DownloadPage() {
+  const { token } = useParams&lt;{ token: string }&gt;()
+  return (
+    &lt;div style={{display:'flex',alignItems:'center',justifyContent:'center',minHeight:'100vh'}}&gt;
+      &lt;div style={{textAlign:'center'}}&gt;
+        &lt;h1 style={{fontSize:'1.5rem',fontWeight:'700',color:'#6366f1'}}&gt;ファイル受信&lt;/h1&gt;
+        &lt;p style={{color:'#94a3b8',marginTop:'8px',fontFamily:'monospace',fontSize:'12px'}}&gt;token: {token}&lt;/p&gt;
+        &lt;p style={{color:'#94a3b8',marginTop:'4px'}}&gt;Phase 4 で実装予定&lt;/p&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  )
+}
+EOF
+
+echo "✅ 全プレースホルダーページ作成完了"
+</pre>
+
+<h2 class="s">4.3 配置完了後のファイル構造確認</h2>
+<div class="clbl">src/ 内のファイル一覧確認</div>
+<pre>
+find src -type f | sort
+</pre>
+
+<div class="result">src/App.tsx
+src/components/layout/Navbar.tsx
+src/components/layout/ProtectedRoute.tsx
+src/index.css
+src/lib/apiClient.ts
+src/lib/keyStorage.ts
+src/lib/queryClient.ts
+src/main.tsx
+src/pages/AdminPage.tsx
+src/pages/DownloadPage.tsx
+src/pages/ListPage.tsx
+src/pages/LoginPage.tsx
+src/pages/SendPage.tsx
+src/stores/authStore.ts
+src/stores/keyStore.ts
+src/stores/transferStore.ts
+src/types/api.ts</div>
+
+<div class="box ok"><div class="bt">✅ STEP 4 完了確認</div><p>上記17ファイルが全て存在すること。</p></div>
+
+<hr class="pb">
+
+<!-- ═══ STEP 5: 動作確認 ═══ -->
+<h1 class="s" id="step5">STEP 5 — 型チェック・ビルド・開発サーバー起動</h1>
+
+<div class="step todo">
+  <div class="sn"><div class="sl">STEP</div><div class="sv">5</div></div>
+  <div class="sb">
+    <div class="st">TypeScript 型チェック → ビルド → 開発サーバー起動の順で確認する</div>
+    <div class="ss">全て成功すれば Phase 0 基盤構築は完了</div>
+  </div>
+</div>
+
+<h2 class="s">5.1 TypeScript 型チェック（エラーゼロ確認）</h2>
+<div class="clbl">型チェック</div>
+<pre>
+pnpm type-check
+<span class="cm"># または</span>
+npx tsc --noEmit
+</pre>
+
+<div class="result"><span class="ok-r"># エラーが何も表示されなければ OK（= 型エラーゼロ）</span></div>
+
+<div class="box err"><div class="bt">❌ 型エラーが出た場合</div>
+<p>エラーメッセージの <code>frontend/src/○○.ts(行番号,列番号)</code> を確認し、該当ファイルが正しく配置されているか、ファイル内容が正しくコピーされているかを確認してください。</p>
+<p>よくある原因: ファイル名のタイポ（<code>.ts</code> と <code>.tsx</code> の混同）、ファイルの配置先ミス。</p>
+</div>
+
+<h2 class="s">5.2 プロダクションビルド確認</h2>
+<div class="clbl">ビルド</div>
+<pre>
+pnpm build
+</pre>
+
+<div class="result">vite v7.x.x building client environment for production...
+transforming...
+<span class="ok-r">✓ xxxx modules transformed.</span>
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.90 kB │ gzip:  0.54 kB
+dist/assets/index-xxxxxxxx.css    5.xx kB │ gzip:  x.xx kB
+dist/assets/index-xxxxxxxx.js   2xx.xx kB │ gzip: xx.xx kB
+<span class="ok-r">✓ built in xx.xxs</span></div>
+
+<div class="box err"><div class="bt">❌ ビルドエラーが出た場合</div>
+<p><strong>「Cannot find module '@/...'」:</strong> <code>tsconfig.json</code> の <code>paths</code> 設定または <code>vite.config.ts</code> の <code>alias</code> 設定を確認。</p>
+<p><strong>「Cannot find module 'react'」:</strong> <code>pnpm install</code> を再実行。</p>
+<p><strong>「Type error: ...」:</strong> STEP 5.1 の型チェックを先に通してから再実行。</p>
+</div>
+
+<h2 class="s">5.3 開発サーバー起動確認</h2>
+<div class="clbl">開発サーバー起動</div>
+<pre>
+pnpm dev
+</pre>
+
+<div class="result">  VITE v7.x.x  ready in xxx ms
+
+  ➜  Local:   <span class="ok-r">http://localhost:3000/</span>
+  ➜  Network: http://192.168.x.x:3000/</div>
+
+<p>ブラウザで <strong>http://localhost:3000/</strong> を開き、画面が表示されることを確認します。</p>
+
+<div class="box tip"><div class="bt">ℹ️ 現時点で表示される画面</div>
+<p>Phase 0 完了時点では <strong>認証なしで "/" にアクセスすると自動的に "/login" へリダイレクト</strong>されます（ProtectedRoute が動作しているため）。</p>
+<p>"/login" には「ログイン / Phase 1 で実装予定」のプレースホルダーが表示されます。これが正常な動作です。</p>
+</div>
+
+<div class="box ok"><div class="bt">✅ STEP 5 完了確認</div>
+<ul>
+  <li><code>pnpm type-check</code> でエラーが何も表示されない</li>
+  <li><code>pnpm build</code> で <code>✓ built in x.xxs</code> が表示される</li>
+  <li><code>pnpm dev</code> で <code>http://localhost:3000/</code> にアクセスでき、画面が表示される</li>
+</ul>
+</div>
+
+<hr class="pb">
+
+<!-- ═══ ファイル構造最終確認 ═══ -->
+<h1 class="s" id="tree">最終ファイル構造</h1>
+<p>Phase 0 完了後の <code>frontend/</code> 全体のファイル構造です。</p>
+
+<div class="tree">
+~/projects/zerosend/frontend/
+│
+├── <span class="fc">.env.local</span>             <span class="cm">← 環境変数（Git管理外・秘密情報）</span>
+├── <span class="fc">.env.example</span>           <span class="cm">← テンプレート（Git管理対象）</span>
+├── <span class="fc">.gitignore</span>
+├── <span class="fc">.npmrc</span>                 <span class="cm">← approve-builds=true</span>
+├── <span class="fc">index.html</span>             <span class="cm">← Vite エントリポイント / Google Fonts 読み込み</span>
+├── <span class="fc">package.json</span>           <span class="cm">← scripts: dev / build / type-check</span>
+├── <span class="fc">pnpm-lock.yaml</span>         <span class="cm">← pnpm が自動生成（手動編集不可）</span>
+├── <span class="fc">tsconfig.json</span>          <span class="cm">← strict + @/ エイリアス + jsx:react-jsx</span>
+├── <span class="fc">vite.config.ts</span>         <span class="cm">← React + Tailwind v4 プラグイン + @/ エイリアス</span>
+│
+├── <span class="d">node_modules/</span>          <span class="cm">← pnpm install で自動生成（Git管理外）</span>
+│
+└── <span class="d">src/</span>
+    ├── <span class="f">App.tsx</span>              <span class="cm">← React Router v7 ルーティング（5ルート）     [F-07]</span>
+    ├── <span class="f">index.css</span>            <span class="cm">← Tailwind v4 + ブランドカラー CSS 変数定義    [F-02]</span>
+    ├── <span class="f">main.tsx</span>             <span class="cm">← React 19 エントリ / APIクライアント初期化    [F-01]</span>
+    │
+    ├── <span class="d">types/</span>
+    │   └── <span class="f">api.ts</span>           <span class="cm">← 全 API レスポンス型 / 内部型定義             [F-05]</span>
+    │
+    ├── <span class="d">lib/</span>
+    │   ├── <span class="f">apiClient.ts</span>     <span class="cm">← ky / JWT 自動付与 / 401 自動ログアウト      [F-04]</span>
+    │   ├── <span class="f">keyStorage.ts</span>    <span class="cm">← IndexedDB Kyber-768 秘密鍵 CRUD           [F-09]</span>
+    │   └── <span class="f">queryClient.ts</span>   <span class="cm">← TanStack Query グローバル設定              [F-10]</span>
+    │
+    ├── <span class="d">stores/</span>
+    │   ├── <span class="f">authStore.ts</span>     <span class="cm">← JWT / ユーザー情報（メモリ保持）            [F-06]</span>
+    │   ├── <span class="f">transferStore.ts</span> <span class="cm">← 送信フロー全体の状態管理                   [F-06]</span>
+    │   └── <span class="f">keyStore.ts</span>      <span class="cm">← ML-KEM-768 鍵ペア メモリキャッシュ         [F-06]</span>
+    │
+    ├── <span class="d">components/</span>
+    │   ├── <span class="d">layout/</span>
+    │   │   ├── <span class="f">Navbar.tsx</span>   <span class="cm">← 共通ナビバー（ロゴ/バッジ/タブ/ML-KEM表示）[F-08]</span>
+    │   │   └── <span class="f">ProtectedRoute.tsx</span> <span class="cm">← 認証ガード HOC                    [F-07]</span>
+    │   ├── <span class="d">shared/</span>         <span class="cm">← 共通コンポーネント（Phase 1+ で追加）</span>
+    │   └── <span class="d">ui/</span>             <span class="cm">← shadcn/ui コンポーネント（Phase 1+ で追加）</span>
+    │
+    ├── <span class="d">pages/</span>
+    │   ├── <span class="f">SendPage.tsx</span>     <span class="cm">← 送信画面プレースホルダー    → Phase 2 で実装</span>
+    │   ├── <span class="f">ListPage.tsx</span>     <span class="cm">← 送信履歴プレースホルダー   → Phase 3 で実装</span>
+    │   ├── <span class="f">DownloadPage.tsx</span> <span class="cm">← 受信画面プレースホルダー   → Phase 4 で実装</span>
+    │   ├── <span class="f">AdminPage.tsx</span>    <span class="cm">← 管理者画面プレースホルダー → Phase 5 で実装</span>
+    │   └── <span class="f">LoginPage.tsx</span>    <span class="cm">← ログイン画面プレースホルダー→ Phase 1 で実装</span>
+    │
+    ├── <span class="d">hooks/</span>              <span class="cm">← カスタムフック（Phase 1+ で追加）</span>
+    └── <span class="d">utils/</span>              <span class="cm">← 汎用ユーティリティ（Phase 1+ で追加）</span>
+</div>
+
+<hr class="pb">
+
+<!-- ═══ インストールパッケージ一覧 ═══ -->
+<h1 class="s" id="packages">インストール済みパッケージ一覧</h1>
+
+<table>
+  <tr><th>パッケージ</th><th>バージョン</th><th>用途</th><th>対応タスク</th></tr>
+  <tr><td><code>react</code></td><td>^19</td><td>UI フレームワーク</td><td>F-01</td></tr>
+  <tr><td><code>react-dom</code></td><td>^19</td><td>React DOM マウント</td><td>F-01</td></tr>
+  <tr><td><code>react-router-dom</code></td><td>^7</td><td>SPA ルーティング</td><td>F-07</td></tr>
+  <tr><td><code>zustand</code></td><td>^5</td><td>グローバル状態管理</td><td>F-06</td></tr>
+  <tr><td><code>ky</code></td><td>^1</td><td>HTTP クライアント（fetch ラッパー）</td><td>F-04</td></tr>
+  <tr><td><code>@tanstack/react-query</code></td><td>^5</td><td>サーバー状態管理・キャッシュ</td><td>F-10</td></tr>
+  <tr><td><code>@tanstack/react-query-devtools</code></td><td>^5</td><td>TanStack Query デバッグツール（開発専用）</td><td>F-10</td></tr>
+  <tr><td><code>idb-keyval</code></td><td>^6</td><td>IndexedDB ラッパー（秘密鍵永続化）</td><td>F-09</td></tr>
+  <tr><td><code>tailwindcss</code></td><td>^4</td><td>CSS フレームワーク</td><td>F-02</td></tr>
+  <tr><td><code>@tailwindcss/vite</code></td><td>^4</td><td>Tailwind v4 Vite プラグイン</td><td>F-02</td></tr>
+  <tr><td><code>clsx</code></td><td>^2</td><td>条件付き className ユーティリティ</td><td>F-02</td></tr>
+  <tr><td><code>tailwind-merge</code></td><td>^3</td><td>Tailwind クラス競合解決</td><td>F-02</td></tr>
+  <tr><td><code>lucide-react</code></td><td>^0.5</td><td>アイコンライブラリ</td><td>F-08</td></tr>
+  <tr><td><code>@noble/post-quantum</code></td><td>^0.5</td><td>ML-KEM-768 (Kyber) 暗号ライブラリ</td><td>F-09, Phase2+</td></tr>
+  <tr><td><code>typescript</code></td><td>~5.x</td><td>TypeScript コンパイラ（開発用）</td><td>F-01</td></tr>
+  <tr><td><code>@types/react</code></td><td>^19</td><td>React 型定義（開発用）</td><td>F-01</td></tr>
+  <tr><td><code>@types/react-dom</code></td><td>^19</td><td>React DOM 型定義（開発用）</td><td>F-01</td></tr>
+  <tr><td><code>@vitejs/plugin-react</code></td><td>^5</td><td>Vite React プラグイン（開発用）</td><td>F-01</td></tr>
+  <tr><td><code>vite</code></td><td>^7</td><td>ビルドツール（開発用）</td><td>F-01</td></tr>
+  <tr><td><code>path</code></td><td>^0.12</td><td>Node.js path モジュール型（vite.config 用）</td><td>F-01</td></tr>
+</table>
+
+<hr class="pb">
+
+<!-- ═══ 日常コマンド ═══ -->
+<h1 class="s" id="daily">日常開発コマンド</h1>
+
+<div class="clbl">frontend/ ディレクトリで実行</div>
+<pre>
+<span class="cm"># ── 開発サーバー起動（ホットリロード有効）────────────────────────</span>
+pnpm dev
+<span class="cm"># → http://localhost:3000/ でアクセス</span>
+
+<span class="cm"># ── TypeScript 型チェックのみ（ビルドなし）───────────────────────</span>
+pnpm type-check
+
+<span class="cm"># ── プロダクションビルド ─────────────────────────────────────────</span>
+pnpm build
+<span class="cm"># → dist/ フォルダに出力される</span>
+
+<span class="cm"># ── ビルド済みファイルのプレビュー ───────────────────────────────</span>
+pnpm preview
+<span class="cm"># → http://localhost:4173/ でアクセス</span>
+
+<span class="cm"># ── パッケージ追加（例: react-dropzone を追加する場合）──────────</span>
+pnpm add react-dropzone
+</pre>
+
+<div class="box sec"><div class="bt">🔐 セキュリティ実装上の最重要事項</div>
+<ul>
+  <li>Kyber-768 の <strong>秘密鍵 (secretKey)</strong> は IndexedDB にのみ保存し、<strong>絶対にサーバーへ送信しない</strong></li>
+  <li><strong>access_token (JWT)</strong> は Zustand メモリにのみ保持し、<strong>localStorage / sessionStorage に保存しない</strong>（XSS対策）</li>
+  <li>AES-256-GCM の鍵生成・暗号化・復号はすべてブラウザ内（Web Crypto API）で完結させる</li>
+  <li>これら3点がZeroSendの「ゼロ知識・ゼロ保持」設計の核心</li>
+</ul>
+</div>
+
+<div style="background:var(--navy);color:#fff;border-radius:12px;padding:28px 32px;margin-top:40px;text-align:center">
+  <div style="font-size:20px;font-weight:800;margin-bottom:8px">Phase 0 基盤構築 完了 🎉</div>
+  <div style="font-size:13px;color:#a5b4fc">次は <strong>Phase 1：認証・ML-KEM-768 鍵ペア生成（F-11〜F-15）</strong> に進んでください</div>
+  <div style="font-size:12px;color:#64748B;margin-top:8px">LoginPage UI / JWT管理 / ユーザー登録 + 鍵ペア生成 / TOTP 2FA / ProtectedRoute ガード</div>
+</div>
+
+</div></body>
+</html>

@@ -1,0 +1,152 @@
+/* =============================================================
+   ZeroSend — src/index.css
+
+   パス        : frontend/src/index.css
+   作成日      : 2026-02-23
+   更新日      : 2026-02-23
+
+   概要        : Tailwind CSS v4 グローバルスタイル
+                 ZeroSend ブランドカラー・フォント・デザイントークン定義
+                 ワイヤーフレームの brand カラー (#6366f1 系) を CSS 変数で管理
+
+   依存関係    :
+     tailwindcss            ^4     @import "tailwindcss" / @theme / @layer
+     Google Fonts           CDN    Noto Sans JP (400/500/600/700)
+                                   DM Mono (400/500 / italic)
+
+   CSS 変数    :
+     --brand-500            #6366f1   プライマリブランドカラー
+     --surface-bg           #0a0a0f   背景色
+     --surface-card         #13131a   カード背景
+     --surface-border       #1e1e2e   ボーダー色
+     --surface-muted        #1a1a28   ミュート背景
+
+   カスタムユーティリティ:
+     .glass                 グラスモーフィズム効果
+     .glow-brand            ブランドカラーグロー
+     .text-gradient-brand   グラデーションテキスト
+
+   使用箇所    :
+     @/main.tsx             エントリポイントでインポート
+   ============================================================= */
+
+@import "tailwindcss";
+
+/* ─── ZeroSend デザイントークン ─────────────────────────────── */
+@layer base {
+  :root {
+    /* brand (indigo/violet) */
+    --brand-50:  #eef2ff;
+    --brand-100: #e0e7ff;
+    --brand-200: #c7d2fe;
+    --brand-300: #a5b4fc;
+    --brand-400: #818cf8;
+    --brand-500: #6366f1;   /* primary */
+    --brand-600: #4f46e5;
+    --brand-700: #4338ca;
+    --brand-800: #3730a3;
+    --brand-900: #312e81;
+
+    /* surface */
+    --surface-bg:      #0a0a0f;
+    --surface-card:    #13131a;
+    --surface-border:  #1e1e2e;
+    --surface-muted:   #1a1a28;
+
+    /* semantic */
+    --color-success:  #22c55e;
+    --color-warning:  #f59e0b;
+    --color-error:    #ef4444;
+    --color-info:     #38bdf8;
+
+    /* radius */
+    --radius-sm:  4px;
+    --radius-md:  8px;
+    --radius-lg:  12px;
+    --radius-xl:  16px;
+    --radius-2xl: 24px;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html {
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    background-color: var(--surface-bg);
+    color: #e2e8f0;
+    min-height: 100vh;
+  }
+
+  code, kbd, pre, .mono {
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* スクロールバースタイル */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--surface-bg);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--surface-border);
+    border-radius: 99px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #2e2e44;
+  }
+}
+
+/* ─── Tailwind v4 カラートークン拡張 ─────────────────────────── */
+@theme {
+  --color-brand-50:  var(--brand-50);
+  --color-brand-100: var(--brand-100);
+  --color-brand-200: var(--brand-200);
+  --color-brand-300: var(--brand-300);
+  --color-brand-400: var(--brand-400);
+  --color-brand-500: var(--brand-500);
+  --color-brand-600: var(--brand-600);
+  --color-brand-700: var(--brand-700);
+  --color-brand-800: var(--brand-800);
+  --color-brand-900: var(--brand-900);
+
+  --color-surface-bg:     var(--surface-bg);
+  --color-surface-card:   var(--surface-card);
+  --color-surface-border: var(--surface-border);
+  --color-surface-muted:  var(--surface-muted);
+
+  --font-sans: 'Noto Sans JP', sans-serif;
+  --font-mono: 'DM Mono', monospace;
+}
+
+/* ─── ユーティリティ ─────────────────────────────────────────── */
+@layer utilities {
+  .glass {
+    background: rgba(19, 19, 26, 0.8);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--surface-border);
+  }
+
+  .glow-brand {
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
+  }
+
+  .text-gradient-brand {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6, #a855f7);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+}

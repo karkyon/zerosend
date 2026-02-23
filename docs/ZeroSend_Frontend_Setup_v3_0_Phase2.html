@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZeroSend フロントエンド構築手順書 — Phase 2 ファイル送信画面</title>
+<style>
+:root {
+  --indigo: #4338CA;
+  --indigo-l: #EEF2FF;
+  --violet: #7c3aed;
+  --emerald: #059669;
+  --bg: #F8FAFC;
+  --card: #FFFFFF;
+  --border: #E2E8F0;
+  --text: #1E293B;
+  --muted: #64748B;
+  --navy: #1E1B4B;
+  --code-bg: #0F172A;
+  --code-text: #E2E8F0;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.6}
+.wrap{max-width:960px;margin:0 auto;padding:32px 24px}
+.cover{background:var(--navy);color:white;border-radius:20px;padding:40px 48px;margin-bottom:40px;position:relative;overflow:hidden}
+.cover::after{content:'';position:absolute;right:-60px;top:-60px;width:300px;height:300px;border-radius:50%;background:rgba(99,102,241,0.15)}
+.cover h1{font-size:32px;font-weight:900;line-height:1.2;position:relative}
+.cover .en{color:#a5b4fc;font-size:12px;margin-top:8px;position:relative}
+.vbadge{background:#4338ca;color:#c7d2fe;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;margin-right:8px;border:1px solid #4f46e5}
+.part-badge{background:rgba(99,102,241,0.3);color:#c7d2fe;font-size:11px;padding:3px 10px;border-radius:20px;border:1px solid rgba(99,102,241,0.5)}
+.cg{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:24px;position:relative}
+.ci{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:12px 14px}
+.ci .l{font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+.ci .v{font-size:13px;font-weight:700;color:#e2e8f0}
+.nav{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px 24px;margin-bottom:36px}
+.nt{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:14px}
+.nav-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.nav-item{font-size:12px;color:#475569}
+.nav-item a{color:var(--indigo);font-weight:600;text-decoration:none}
+.nav-item a:hover{text-decoration:underline}
+h1.s{font-size:20px;font-weight:800;color:var(--text);margin:40px 0 16px;padding-bottom:8px;border-bottom:2px solid var(--border)}
+h2.s{font-size:14px;font-weight:700;color:var(--text);margin:20px 0 10px}
+.step{display:flex;gap:16px;background:linear-gradient(135deg,#eff6ff,#f5f3ff);border:1px solid #c7d2fe;border-radius:14px;padding:16px 20px;margin-bottom:12px}
+.step.todo{border-color:#c7d2fe}
+.step.ok{border-color:#a7f3d0;background:linear-gradient(135deg,#f0fdf4,#ecfdf5)}
+.sn{flex-shrink:0}
+.sl{font-size:9px;font-weight:700;color:#6366f1;letter-spacing:.1em;text-transform:uppercase}
+.sv{font-size:28px;font-weight:900;color:#4338ca;line-height:1}
+.st{font-size:14px;font-weight:700;color:#1e293b;margin-bottom:4px}
+.ss{font-size:12px;color:#64748b}
+.clbl{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;background:var(--code-bg);border-radius:8px 8px 0 0;padding:6px 14px}
+pre{background:var(--code-bg);color:var(--code-text);padding:16px 18px;border-radius:0 0 10px 10px;font-size:12.5px;line-height:1.7;overflow-x:auto;margin-bottom:20px}
+.result{background:#0d2137;border:1px solid #1e4060;border-radius:10px;padding:14px 18px;font-size:12px;font-family:monospace;color:#94d3f5;margin-bottom:16px}
+.ok-r{color:#4ade80}
+.warn-r{color:#fbbf24}
+.err-r{color:#f87171}
+.box{border-radius:12px;padding:14px 18px;margin-bottom:16px;font-size:13px}
+.box.ok{background:#f0fdf4;border:1px solid #a7f3d0}
+.box.ok .bt{color:#065f46;font-weight:700;margin-bottom:6px}
+.box.warn{background:#fffbeb;border:1px solid #fde68a}
+.box.warn .bt{color:#92400e;font-weight:700;margin-bottom:6px}
+.box.err{background:#fef2f2;border:1px solid #fecaca}
+.box.err .bt{color:#991b1b;font-weight:700;margin-bottom:6px}
+.tag-f{display:inline-block;background:var(--indigo-l);color:var(--indigo);font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;margin-left:6px;border:1px solid #C7D2FE}
+.tag-star{display:inline-block;background:#fef3c7;color:#b45309;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;margin-left:4px;border:1px solid #fde68a}
+.security-critical{background:linear-gradient(135deg,#1a0533,#2d1454);border:2px solid #9333ea;border-radius:12px;padding:20px 24px;margin:16px 0}
+.security-critical .sc-title{color:#e879f9;font-weight:800;font-size:14px;margin-bottom:12px}
+.security-critical ul{color:#d8b4fe;font-size:13px;padding-left:20px}
+.security-critical li{margin:6px 0;line-height:1.6}
+.security-critical strong{color:#f0abfc}
+.file-card{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;margin-bottom:8px;overflow:hidden}
+.fc-head{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:#f1f5f9;border-bottom:1px solid #e2e8f0}
+.fc-path{font-family:monospace;font-size:12px;font-weight:700;color:#334155}
+.fc-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px}
+.fc-badge.new{background:#064E3B;color:#6EE7B7}
+.fc-badge.upd{background:#1E3A5F;color:#93C5FD}
+.fc-body{padding:10px 16px;font-size:12px;color:#475569;line-height:1.6}
+hr.pb{border:none;border-top:2px dashed var(--border);margin:44px 0}
+.cm{color:#4ade80}
+.str{color:#fbbf24}
+.kw{color:#93c5fd}
+.ok-code{color:#86efac}
+table{width:100%;border-collapse:collapse;margin:12px 0}
+th,td{padding:8px 12px;text-align:left;font-size:12px;border-bottom:1px solid #e2e8f0}
+th{background:#f8fafc;font-weight:700;color:#334155}
+.path-col{font-family:monospace;font-weight:600}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- COVER -->
+<div class="cover">
+  <div>
+    <span class="vbadge">v3.0</span>
+    <span class="part-badge">Phase 2 — ファイル送信画面 F-16〜F-26</span>
+  </div>
+  <h1 style="margin-top:16px">ZeroSend<br>フロントエンド構築手順書</h1>
+  <p class="en">Phase 2 — File Send Screen with AES-256-GCM Encryption &amp; ML-KEM-768 Key Encapsulation</p>
+  <div class="cg">
+    <div class="ci"><div class="l">前提</div><div class="v">Phase 1 完了済み</div></div>
+    <div class="ci"><div class="l">新規ファイル</div><div class="v">8ファイル</div></div>
+    <div class="ci"><div class="l">更新ファイル</div><div class="v">2ファイル</div></div>
+    <div class="ci"><div class="l">追加パッケージ</div><div class="v">react-dropzone / qrcode.react</div></div>
+    <div class="ci"><div class="l">核心機能</div><div class="v">クライアント側暗号化</div></div>
+    <div class="ci"><div class="l">暗号ライブラリ</div><div class="v">Web Crypto API + Kyber768</div></div>
+    <div class="ci"><div class="l">API 連携数</div><div class="v">4 エンドポイント</div></div>
+    <div class="ci"><div class="l">完了タスク</div><div class="v">F-16〜F-26 (11件)</div></div>
+  </div>
+</div>
+
+<!-- セキュリティ注意事項 -->
+<div class="security-critical">
+  <div class="sc-title">🔐 Phase 2 暗号化実装の最重要原則（必読）</div>
+  <ul>
+    <li><strong>AES-256-GCM 暗号化</strong>はブラウザ内 <code>crypto.subtle</code> で実行。暗号化前のファイルは絶対にサーバへ送らない</li>
+    <li><strong>ML-KEM-768 カプセル化</strong>後の K_enc (暗号化済みAES鍵) のみをサーバへ送信。生AES鍵はサーバに届かない</li>
+    <li><strong>生AES鍵 (aesKeyRaw)</strong> は K_enc 生成後、変数スコープを外れて GC に委ねる。IndexedDB や localStorage には保存しない</li>
+    <li><strong>K_enc フォーマット</strong>: Base64(kyberCipherText[1088B] || XOR(aesKey, sharedSecret)[32B]) ← 受信者だけが復号可能</li>
+  </ul>
+</div>
+
+<!-- 目次 -->
+<div class="nav">
+  <div class="nt">📋 この手順書の対象タスク（F-16〜F-26）</div>
+  <div class="nav-grid">
+    <div class="nav-item"><a href="#step1">STEP 1</a> パッケージ追加</div>
+    <div class="nav-item"><a href="#step2">STEP 2</a> types/api.ts 更新</div>
+    <div class="nav-item"><a href="#step3">STEP 3</a> transferStore.ts 更新</div>
+    <div class="nav-item"><a href="#step4">STEP 4</a> cryptoService.ts 新規 (F-22,23)</div>
+    <div class="nav-item"><a href="#step5">STEP 5</a> transferService.ts 新規 (F-24,26)</div>
+    <div class="nav-item"><a href="#step6">STEP 6</a> StepIndicator.tsx (F-16)</div>
+    <div class="nav-item"><a href="#step7">STEP 7</a> DropZone.tsx (F-17)</div>
+    <div class="nav-item"><a href="#step8">STEP 8</a> RecipientInput.tsx (F-18)</div>
+    <div class="nav-item"><a href="#step9">STEP 9</a> CloudStorageSelector.tsx (F-19)</div>
+    <div class="nav-item"><a href="#step10">STEP 10</a> SecurityPanel.tsx (F-20,21)</div>
+    <div class="nav-item"><a href="#step11">STEP 11</a> ProgressView.tsx (F-25)</div>
+    <div class="nav-item"><a href="#step12">STEP 12</a> SuccessView.tsx (F-26)</div>
+    <div class="nav-item"><a href="#step13">STEP 13</a> SendPage.tsx 全体統合</div>
+    <div class="nav-item"><a href="#step14">STEP 14</a> 型チェック・動作確認</div>
+    <div class="nav-item"><a href="#step15">STEP 15</a> Git コミット</div>
+  </div>
+</div>
+
+<!-- ファイル一覧 -->
+<h1 class="s" id="files">Phase 2 ファイル一覧</h1>
+<table>
+  <tr><th>配置先パス</th><th>対応タスク</th><th>役割</th><th>種別</th></tr>
+  <tr><td class="path-col">frontend/src/lib/cryptoService.ts</td><td><span class="tag-f">F-22</span><span class="tag-f">F-23</span></td><td>AES-256-GCM 暗号化・ML-KEM-768 カプセル化</td><td>🆕 新規</td></tr>
+  <tr><td class="path-col">frontend/src/services/transferService.ts</td><td><span class="tag-f">F-24</span><span class="tag-f">F-26</span></td><td>転送 API 連携（4エンドポイント）</td><td>🆕 新規</td></tr>
+  <tr><td class="path-col">frontend/src/components/send/StepIndicator.tsx</td><td><span class="tag-f">F-16</span></td><td>3ステップ進捗インジケーター</td><td>🆕 新規</td></tr>
+  <tr><td class="path-col">frontend/src/components/send/DropZone.tsx</td><td><span class="tag-f">F-17</span></td><td>ドラッグ&amp;ドロップゾーン (react-dropzone)</td><td>🆕 新規</td></tr>
+  <tr><td class="path-col">frontend/src/components/send/RecipientInput.tsx</td><td><span class="tag-f">F-18</span></td><td>受信者メール入力 + Kyber鍵バッジ</td><td>🆕 新規</td></tr>
+  <tr><td class="path-col">frontend/src/components/send/CloudStorageSelector.tsx</td><td><span class="tag-f">F-19</span></td><td>クラウドストレージ選択 UI</td><td>🆕 新規</td></tr>
+  <tr><td class="path-col">frontend/src/components/send/SecurityPanel.tsx</td><td><span class="tag-f">F-20</span><span class="tag-f">F-21</span></td><td>セキュリティ設定パネル + 分割アップロード</td><td>🆕 新規</td></tr>
+  <tr><td class="path-col">frontend/src/components/send/ProgressView.tsx</td><td><span class="tag-f">F-25</span></td><td>送信進捗バー &amp; アニメーション</td><td>🆕 新規</td></tr>
+  <tr><td class="path-col">frontend/src/components/send/SuccessView.tsx</td><td><span class="tag-f">F-26</span></td><td>送信完了画面（ワンタイムURL + QR）</td><td>🆕 新規</td></tr>
+  <tr><td class="path-col">frontend/src/pages/SendPage.tsx</td><td>全F-16〜26</td><td>送信ページ全体統合</td><td>🔄 更新</td></tr>
+  <tr><td class="path-col">frontend/src/types/api.ts</td><td>F-24</td><td>InitiateTransferRequest/Response 型追加</td><td>🔄 更新</td></tr>
+  <tr><td class="path-col">frontend/src/stores/transferStore.ts</td><td>F-24,26</td><td>reset アクション追加</td><td>🔄 更新</td></tr>
+</table>
+
+<hr class="pb">
+
+<!-- STEP 1 -->
+<h1 class="s" id="step1">STEP 1 — 新規パッケージのインストール</h1>
+<div class="step todo">
+  <div class="sn"><div class="sl">STEP</div><div class="sv">1</div></div>
+  <div class="sb">
+    <div class="st">react-dropzone と qrcode.react を追加インストールする</div>
+    <div class="ss">Phase 1 まで未インストールのパッケージ。Phase 2 で初めて使用する。</div>
+  </div>
+</div>
+<div class="clbl">ターミナル — zerosend/frontend ディレクトリ内で実行</div>
+<pre>
+cd ~/projects/zerosend/frontend
+<span class="cm"># react-dropzone: ドラッグ&ドロップゾーン (F-17)</span>
+<span class="cm"># qrcode.react:   QRコード生成 (F-26)</span>
+pnpm add react-dropzone qrcode.react
+</pre>
+<div class="result"><span class="ok-r">✅ 成功時の出力例:</span>
+Packages: +3
++++
+Progress: resolved 3, reused 0, downloaded 3, added 3, done
+
+dependencies:
++ react-dropzone 14.x.x
++ qrcode.react 4.x.x</div>
+
+<div class="clbl">インストール確認</div>
+<pre>
+pnpm list react-dropzone qrcode.react
+</pre>
+
+<div class="box ok"><div class="bt">✅ STEP 1 完了確認</div><p>react-dropzone と qrcode.react の両方がリストに表示されれば OK。</p></div>
+
+<hr class="pb">
+
+<!-- STEP 2 -->
+<h1 class="s" id="step2">STEP 2 — src/types/api.ts に型を追加する <span class="tag-f">F-24</span></h1>
+<div class="step todo">
+  <div class="sn"><div class="sl">STEP</div><div class="sv">2</div></div>
+  <div class="sb">
+    <div class="st">既存の api.ts に InitiateTransfer の型を追記する（未定義の場合のみ）</div>
+    <div class="ss">既に定義されている場合はスキップ可。存在チェックしてから追加する。</div>
+  </div>
+</div>
+
+<div class="clbl">存在チェック</div>
+<pre>
+grep -n "InitiateTransferRequest" src/types/api.ts
+<span class="cm"># 出力があればスキップ。何も出なければ下記を追記する。</span>
+</pre>
+
+<div class="clbl">src/types/api.ts の末尾に追記（未定義の場合のみ）</div>
+<pre>
+cat >> src/types/api.ts << 'EOF'
+
+// ─── 転送開始 API ─────────────────────────────────────────────
+
+/** POST /api/v1/transfer/initiate リクエスト */
+export interface InitiateTransferRequest {
+  recipient_email:    string
+  cloud_type:         'box' | 'gdrive' | 'onedrive' | 'dropbox'
+  file_size_bytes:    number
+  file_hash_sha3:     string
+  expires_in_seconds: number
+  max_downloads:      number
+}
+
+/** POST /api/v1/transfer/initiate レスポンス */
+export interface InitiateTransferResponse {
+  session_id:               string
+  url_token:                string
+  upload_url:               string
+  recipient_public_key_b64: string
+  expires_at:               string
+}
+EOF
+</pre>
+
+<div class="box ok"><div class="bt">✅ STEP 2 完了確認</div>
+<p><code>grep "InitiateTransferRequest" src/types/api.ts</code> で定義が見えれば OK。</p></div>
+
+<hr class="pb">
+
+<!-- STEP 3 -->
+<h1 class="s" id="step3">STEP 3 — src/stores/transferStore.ts に reset アクションを追加 <span class="tag-f">F-26</span></h1>
+<div class="step todo">
+  <div class="sn"><div class="sl">STEP</div><div class="sv">3</div></div>
+  <div class="sb">
+    <div class="st">transferStore.ts に reset() を追加する（ない場合のみ）</div>
+    <div class="ss">SendPage の「別のファイルを送る」ボタンで全状態をリセットするために必要。</div>
+  </div>
+</div>
+
+<div class="clbl">存在チェック</div>
+<pre>
+grep -n "reset" src/stores/transferStore.ts
+<span class="cm"># 出力があればスキップ</span>
+</pre>
+
+<p>未定義の場合、<code>src/stores/transferStore.ts</code> の <strong>インターフェース</strong> と <strong>実装</strong> 両方に追加してください。</p>
+
+<div class="clbl">TransferState インターフェースへの追加（// Actions セクション内）</div>
+<pre>
+<span class="cm">// // Actions のブロック内に以下を追記:</span>
+reset: () => void
+</pre>
+
+<div class="clbl">create() 実装内に追加</div>
+<pre>
+reset: () => set({
+  step: 'file',
+  file: null,
+  fileHashSha3: null,
+  recipientEmail: '',
+  recipientPublicKeyB64: null,
+  hasKyberKey: false,
+  cloudProvider: 'box',
+  expiresInSeconds: 86400,
+  maxDownloads: 1,
+  twofaType: 'totp',
+  sessionId: null,
+  shareUrl: null,
+  urlToken: null,
+  uploadProgress: null,
+  error: null,
+}),
+</pre>
+
+<div class="box ok"><div class="bt">✅ STEP 3 完了確認</div>
+<p><code>grep -n "reset" src/stores/transferStore.ts</code> でインターフェースと実装の両方が表示されれば OK。</p></div>
+
+<hr class="pb">
+
+<!-- STEP 4 -->
+<h1 class="s" id="step4">STEP 4 — src/lib/cryptoService.ts 新規作成 <span class="tag-f">F-22</span><span class="tag-f">F-23</span><span class="tag-star">⭐核心</span></h1>
+<div class="step todo">
+  <div class="sn"><div class="sl">STEP</div><div class="sv">4</div></div>
+  <div class="sb">
+    <div class="st">クライアント側暗号化サービスを新規作成する（Phase 2 の最重要実装）</div>
+    <div class="ss">AES-256-GCM ファイル暗号化 + ML-KEM-768 AES鍵カプセル化</div>
+  </div>
+</div>
+<div class="file-card">
+  <div class="fc-head">
+    <span class="fc-path">frontend/src/lib/cryptoService.ts</span>
+    <span class="fc-badge new">🆕 新規作成</span>
+  </div>
+  <div class="fc-body">
+    <p>F-22: Web Crypto API (crypto.subtle) による AES-256-GCM ファイル暗号化</p>
+    <p>F-23: @noble/post-quantum ml_kem768.encapsulate() によるAES鍵カプセル化</p>
+    <p>K_enc フォーマット: Base64(kyberCT[1088B] || XOR(aesKey,sharedSecret)[32B])</p>
+  </div>
+</div>
+<p>ダウンロードしたファイルを <code>frontend/src/lib/cryptoService.ts</code> として配置してください。</p>
+
+<div class="box ok"><div class="bt">✅ STEP 4 完了確認</div>
+<p><code>ls src/lib/cryptoService.ts</code> でファイルが存在すれば OK。</p></div>
+
+<hr class="pb">
+
+<!-- STEP 5 -->
+<h1 class="s" id="step5">STEP 5 — src/services/transferService.ts 新規作成 <span class="tag-f">F-24</span><span class="tag-f">F-26</span></h1>
+<div class="step todo">
+  <div class="sn"><div class="sl">STEP</div><div class="sv">5</div></div>
+  <div class="sb">
+    <div class="st">転送 API 連携サービスを新規作成する</div>
+    <div class="ss">initiate → upload → storeKey → finalizeUrl の4ステップフロー</div>
+  </div>
+</div>
+<div class="file-card">
+  <div class="fc-head">
+    <span class="fc-path">frontend/src/services/transferService.ts</span>
+    <span class="fc-badge new">🆕 新規作成</span>
+  </div>
+  <div class="fc-body">
+    <p>checkRecipientKey: GET /transfer/recipient-key?email= (受信者公開鍵確認)</p>
+    <p>initiateTransfer:  POST /transfer/initiate (セッション開始)</p>
+    <p>uploadEncryptedFile: PUT {signedUrl} (XHR + onUploadProgress)</p>
+    <p>storeEncryptedKey: POST /transfer/:id/key (K_enc 保存)</p>
+    <p>finalizeTransferUrl: POST /transfer/:id/url (URL確定・メール送信)</p>
+    <p>executeSendFlow: 上記4ステップを統合実行する高レベル関数</p>
+  </div>
+</div>
+<p>ダウンロードしたファイルを <code>frontend/src/services/</code> ディレクトリを作成して配置してください。</p>
+
+<div class="clbl">services ディレクトリ作成</div>
+<pre>
+mkdir -p src/services
+</pre>
+
+<div class="box ok"><div class="bt">✅ STEP 5 完了確認</div>
+<p><code>ls src/services/transferService.ts</code> でファイルが存在すれば OK。</p></div>
+
+<hr class="pb">
+
+<!-- STEP 6〜12: コンポーネント群 -->
+<h1 class="s" id="step6">STEP 6〜12 — components/send/ コンポーネント群の作成 <span class="tag-f">F-16〜F-21</span><span class="tag-f">F-25</span><span class="tag-f">F-26</span></h1>
+<div class="step todo">
+  <div class="sn"><div class="sl">STEP</div><div class="sv">6-12</div></div>
+  <div class="sb">
+    <div class="st">send/ ディレクトリを作成し、7つのコンポーネントファイルを配置する</div>
+    <div class="ss">各コンポーネントは SendPage.tsx から import して使用する</div>
+  </div>
+</div>
+
+<div class="clbl">ディレクトリ作成</div>
+<pre>
+mkdir -p src/components/send
+</pre>
+
+<p>以下の7ファイルを <code>frontend/src/components/send/</code> に配置してください。</p>
+
+<table>
+  <tr><th>ファイル名</th><th>タスク</th><th>説明</th></tr>
+  <tr><td class="path-col">StepIndicator.tsx</td><td><span class="tag-f">F-16</span></td><td>①ファイル選択→②受信者設定→③送信確認 のステップ表示</td></tr>
+  <tr><td class="path-col">DropZone.tsx</td><td><span class="tag-f">F-17</span></td><td>react-dropzone使用。最大1GB。選択後サムネイル表示。暗号化バッジ</td></tr>
+  <tr><td class="path-col">RecipientInput.tsx</td><td><span class="tag-f">F-18</span></td><td>メール入力→API照会→「🔑 Kyber鍵あり」バッジ。タグ形式UI</td></tr>
+  <tr><td class="path-col">CloudStorageSelector.tsx</td><td><span class="tag-f">F-19</span></td><td>Box / Google Drive / OneDrive / Dropbox グリッド選択</td></tr>
+  <tr><td class="path-col">SecurityPanel.tsx</td><td><span class="tag-f">F-20</span><span class="tag-f">F-21</span></td><td>有効期限・DL回数・FIDO2トグル・分割アップロードトグル。常時ON表示</td></tr>
+  <tr><td class="path-col">ProgressView.tsx</td><td><span class="tag-f">F-25</span></td><td>暗号化中・アップロード中のグラデーション進捗バー。ステージリスト</td></tr>
+  <tr><td class="path-col">SuccessView.tsx</td><td><span class="tag-f">F-26</span></td><td>ワンタイムURL + QRコード(qrcode.react)。コピー・有効期限・ゼロ保持注記</td></tr>
+</table>
+
+<div class="clbl">配置確認コマンド</div>
+<pre>
+ls src/components/send/
+<span class="cm"># 期待値:</span>
+<span class="ok-code">CloudStorageSelector.tsx  DropZone.tsx  ProgressView.tsx
+RecipientInput.tsx  SecurityPanel.tsx  StepIndicator.tsx  SuccessView.tsx</span>
+</pre>
+
+<hr class="pb">
+
+<!-- STEP 13 -->
+<h1 class="s" id="step13">STEP 13 — src/pages/SendPage.tsx 全体統合 <span class="tag-f">F-16〜F-26</span></h1>
+<div class="step todo">
+  <div class="sn"><div class="sl">STEP</div><div class="sv">13</div></div>
+  <div class="sb">
+    <div class="st">既存の SendPage.tsx をフル実装版に置き換える</div>
+    <div class="ss">全コンポーネント・サービスを統合する Phase 2 のメイン画面</div>
+  </div>
+</div>
+<div class="file-card">
+  <div class="fc-head">
+    <span class="fc-path">frontend/src/pages/SendPage.tsx</span>
+    <span class="fc-badge upd">🔄 更新 (既存のプレースホルダーを置き換え)</span>
+  </div>
+  <div class="fc-body">
+    <p>3ステップフォーム（ファイル→受信者→確認）+ 送信中進捗 + 送信完了 を一画面で管理</p>
+    <p>左パネル: StepIndicator + Step コンテンツ / 右パネル: SecurityPanel (常時表示)</p>
+    <p>handleSend(): 暗号化(F-22) → カプセル化(F-23) → API フロー(F-24) を順に実行</p>
+  </div>
+</div>
+<p>ダウンロードしたファイルで <strong>既存の</strong> <code>frontend/src/pages/SendPage.tsx</code> を上書きしてください。</p>
+
+<div class="box ok"><div class="bt">✅ STEP 13 完了確認</div>
+<p><code>grep "executeSendFlow" src/pages/SendPage.tsx</code> でインポート行が見えれば OK。</p></div>
+
+<hr class="pb">
+
+<!-- STEP 14 -->
+<h1 class="s" id="step14">STEP 14 — 型チェック・ビルド・動作確認</h1>
+<div class="step todo">
+  <div class="sn"><div class="sl">STEP</div><div class="sv">14</div></div>
+  <div class="sb">
+    <div class="st">TypeScript 型チェック → ビルド → 開発サーバー起動 → 画面確認</div>
+    <div class="ss">エラーゼロを確認してから動作テストへ進む</div>
+  </div>
+</div>
+
+<h2 class="s">14.1 TypeScript 型チェック</h2>
+<div class="clbl">型チェック</div>
+<pre>
+pnpm type-check
+<span class="cm"># または: npx tsc --noEmit</span>
+</pre>
+<div class="result"><span class="ok-r"># エラーゼロであれば OK（何も表示されない）</span></div>
+
+<div class="box warn">
+  <div class="bt">⚠️ よくある型エラーと対処法</div>
+  <p><strong>「Module not found: react-dropzone」</strong> → STEP 1 の pnpm add が未完了。再実行する。</p>
+  <p><strong>「Module not found: qrcode.react」</strong> → 同上。<code>pnpm add qrcode.react</code> を再実行。</p>
+  <p><strong>「InitiateTransferRequest not found」</strong> → STEP 2 の型追加が未完了。api.ts を確認する。</p>
+  <p><strong>「Property 'reset' does not exist on type」</strong> → STEP 3 の transferStore 更新が未完了。</p>
+  <p><strong>「Module not found: @noble/hashes/sha3」</strong> → <code>pnpm add @noble/hashes</code> を実行（通常は transitive dep として存在するはず）。</p>
+</div>
+
+<h2 class="s">14.2 開発サーバー起動</h2>
+<div class="clbl">Docker 環境の場合 (zs-fe エイリアス使用)</div>
+<pre>
+zs-fe
+<span class="cm"># または: cd ~/projects/zerosend/frontend && pnpm dev</span>
+</pre>
+
+<h2 class="s">14.3 動作確認チェックリスト</h2>
+<div class="clbl">ブラウザで http://localhost:5173 を開いて以下を確認</div>
+<pre>
+□ 1. / にアクセスすると SendPage が表示される
+□ 2. ステップインジケーター (1→2→3) が表示される
+□ 3. ファイルをドラッグ&ドロップまたはクリックして選択できる
+□ 4. 1GB 超のファイルを選択するとエラーになる
+□ 5. ファイル選択後「受信者を設定する」ボタンが有効になる
+□ 6. STEP 2 で受信者メールを入力 → Enter で確定 → API 照会される
+□ 7. クラウドストレージをグリッドから選択できる
+□ 8. 右サイドパネルのセキュリティ設定が操作できる
+□ 9. STEP 3 でサマリーが表示される
+□ 10. 「安全に送信する」クリックで Progress 画面に遷移する
+</pre>
+
+<div class="box warn">
+  <div class="bt">⚠️ 開発環境でのアップロードについて</div>
+  <p>開発環境ではクラウドストレージ (Box/GDrive 等) が未接続のため、署名付きURLへの PUT は CORS エラーになります。<code>transferService.ts</code> はこれを検知して <code>mock-file-{uuid}</code> をフォールバック ID として使用します。</p>
+  <p>そのため送信フローは最後まで実行され、MailHog (<code>http://localhost:8025</code>) でメールが届くことを確認できます。</p>
+</div>
+
+<div class="clbl">バックエンドとの API テスト (curl)</div>
+<pre>
+<span class="cm"># 受信者公開鍵確認 API テスト</span>
+curl -H "Authorization: Bearer YOUR_JWT" \
+  "http://localhost:8000/api/v1/transfer/recipient-key?email=test@example.com"
+
+<span class="cm"># 期待レスポンス (未登録ユーザー):</span>
+<span class="ok-code">{"email":"test@example.com","hasKyberKey":false}</span>
+
+<span class="cm"># 期待レスポンス (登録済みユーザー):</span>
+<span class="ok-code">{"email":"test@example.com","hasKyberKey":true,"publicKeyKyberB64":"..."}</span>
+</pre>
+
+<div class="box ok"><div class="bt">✅ STEP 14 完了確認</div>
+<p>型チェックがゼロエラー + 画面でステップ遷移できれば Phase 2 は完了です。</p></div>
+
+<hr class="pb">
+
+<!-- STEP 15 -->
+<h1 class="s" id="step15">STEP 15 — Git コミット &amp; プロジェクトナレッジ更新</h1>
+<div class="step todo">
+  <div class="sn"><div class="sl">STEP</div><div class="sv">15</div></div>
+  <div class="sb">
+    <div class="st">全変更をコミットして GitHub へプッシュする</div>
+    <div class="ss">プロジェクトナレッジへの共有もこの時点で完了する</div>
+  </div>
+</div>
+<div class="clbl">zerosend ルートディレクトリで実行</div>
+<pre>
+cd ~/projects/zerosend
+
+<span class="cm"># ステータス確認</span>
+git status
+
+<span class="cm"># ステージング</span>
+git add frontend/src/lib/cryptoService.ts
+git add frontend/src/services/transferService.ts
+git add frontend/src/components/send/
+git add frontend/src/pages/SendPage.tsx
+git add frontend/src/types/api.ts
+git add frontend/src/stores/transferStore.ts
+git add frontend/package.json
+git add frontend/pnpm-lock.yaml
+
+<span class="cm"># コミット</span>
+git commit -m "feat(frontend): Phase 2 ファイル送信画面実装 (F-16〜F-26)
+
+- F-16: StepIndicator (3ステップ進捗インジケーター)
+- F-17: DropZone (react-dropzone, max 1GB バリデーション)
+- F-18: RecipientInput (受信者メール + Kyber鍵バッジ)
+- F-19: CloudStorageSelector (Box/GDrive/OneDrive/Dropbox)
+- F-20: SecurityPanel (有効期限/DL回数/FIDO2/常時ONバッジ)
+- F-21: 分割アップロードトグル (SecurityPanel内)
+- F-22: cryptoService.ts AES-256-GCM クライアント側暗号化
+- F-23: ML-KEM-768 AES鍵カプセル化 (Kyber768.encapsulate)
+- F-24: transferService.ts 送信APIフロー (initiate/upload/storeKey/finalize)
+- F-25: ProgressView (暗号化・アップロード進捗バー)
+- F-26: SuccessView (ワンタイムURL + QRコード)"
+
+<span class="cm"># プッシュ</span>
+git push origin main
+</pre>
+
+<div class="box ok"><div class="bt">✅ STEP 15 完了確認</div>
+<p><code>git log --oneline -1</code> でコミットが表示されれば全工程完了です。</p></div>
+
+<!-- フッター -->
+<div style="background:var(--navy);color:#fff;border-radius:12px;padding:28px 32px;margin-top:40px;text-align:center">
+  <div style="font-size:20px;font-weight:800;margin-bottom:8px">Phase 2 ファイル送信画面 完了 🎉</div>
+  <div style="font-size:13px;color:#a5b4fc;margin-bottom:6px">次は <strong>Phase 3：送信履歴画面 (F-27〜F-32)</strong> に進んでください</div>
+  <div style="font-size:12px;color:#64748B">カードグリッド / ステータスフィルター / キーワード検索 / カウントダウンタイマー / 強制削除</div>
+</div>
+
+</div>
+</body>
+</html>

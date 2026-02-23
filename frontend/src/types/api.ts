@@ -16,6 +16,13 @@
 //   ZeroSend_BackendAPI_Spec_v1.0.docx
 //   ZeroSend_DB_Spec_v1.0.docx (Prisma スキーマ)
 //   ZeroSend_Architecture_v1.0.html (Redis キャッシュ設計)
+//
+// NOTE (v1.2 TODO):
+//   将来的に以下の拡張を検討中:
+//   - recipient_public_key を { algorithm, public_key_b64 } に変更
+//   - file_hash を { algorithm, value } に変更
+//   - authentication を { twofa_type } オブジェクトに整理
+//   現時点はバックエンド v1 実装に完全準拠した定義を維持する
 // =============================================================
 
 // ─── 共通 ─────────────────────────────────────────────────────
@@ -135,17 +142,29 @@ export interface TotpVerifyResponse {
 }
 
 // ─── 転送 API ─────────────────────────────────────────────────
+//
+// フィールド名はバックエンド transfer.validator.ts の Zod スキーマに完全準拠。
+// ズレがあると 400 Bad Request になるため慎重に管理すること。
+//
+// バックエンド実装 (transfer.validator.ts):
+//   cloud_type         ← 'box' | 'gdrive' | 'onedrive' | 'dropbox' | 'server'
+//   expires_in_hours   ← number (1〜168)  ※ seconds ではなく hours 単位
+//   enc_key_b64        ← K_enc の保存フィールド名
+//
+// フロントエンドとのインピーダンスミスマッチの吸収場所:
+//   transferService.ts の executeSendFlow() 内で以下を変換する:
+//     expiresInSeconds (Zustand) → expires_in_hours (API) = Math.round(s / 3600)
+//     cloudProvider (Zustand)   → cloud_type (API)
 
 /** POST /api/v1/transfer/initiate リクエスト */
 export interface InitiateTransferRequest {
-  recipient_email: string
-  file_name: string
-  file_size_bytes: number
-  file_hash_sha3: string        // SHA3-256 of plaintext file
-  cloud_provider: CloudProvider
-  expires_in_seconds: number    // 3600 / 21600 / 43200 / 86400
-  max_downloads: number         // 1 / 2 / 3 / 5
-  twofa_type: TwoFaType
+  recipient_email:     string
+  file_hash_sha3:      string                                          // SHA3-256 hex (64文字)
+  file_size_bytes:     number
+  encrypted_filename?: string                                          // 任意: 暗号化済みファイル名
+  cloud_type:          'box' | 'gdrive' | 'onedrive' | 'dropbox' | 'server'
+  expires_in_hours:    number                                          // 1〜168 (hours)
+  max_downloads:       number                                          // 1〜5
 }
 
 /** POST /api/v1/transfer/initiate レスポンス */
@@ -153,14 +172,14 @@ export interface InitiateTransferResponse {
   session_id:               string
   url_token:                string
   upload_url:               string
-  recipient_public_key_b64: string
-  expires_at:               string
+  recipient_public_key_b64: string   // ML-KEM-768 公開鍵 (Base64)
+  expires_at:               string   // ISO 8601
 }
 
 /** POST /api/v1/transfer/:id/key リクエスト */
 export interface StoreKeyRequest {
-  encrypted_key_b64: string    // K_enc: Kyberカプセル化済みAES-256鍵
-  cloud_file_id: string        // クラウドストレージ側のファイルID
+  enc_key_b64:   string   // K_enc: ML-KEM-768 でラップした AES-256 鍵 (Base64)
+  cloud_file_id: string   // クラウドストレージ側のファイルID
 }
 
 /** POST /api/v1/transfer/:id/key レスポンス */
@@ -171,14 +190,15 @@ export interface StoreKeyResponse {
 
 /** POST /api/v1/transfer/:id/url リクエスト */
 export interface FinalizeUrlRequest {
-  recipient_email?: string
+  send_email?:        boolean
+  email_template_id?: string
+  custom_message?:    string
 }
 
 /** POST /api/v1/transfer/:id/url レスポンス */
 export interface FinalizeUrlResponse {
-  share_url: string   // 受信者に送るワンタイムURL
-  url_token: string
-  expires_at: string
+  share_url:  string   // 受信者に送るワンタイムURL
+  email_sent: boolean
 }
 
 // ─── ダウンロード API ─────────────────────────────────────────
@@ -198,10 +218,19 @@ export interface DownloadInfoResponse {
 
 /** GET /api/v1/download/:token/key レスポンス */
 export interface DownloadKeyResponse {
-  encrypted_key_b64: string    // K_enc (Kyberカプセル化済みAES鍵)
+  encrypted_key_b64: string    // K_enc (ML-KEM-768 カプセル化済みAES鍵)
   cloud_file_url: string       // 署名付きDL URL
   file_hash_sha3: string       // 整合性検証用 SHA3-256
   file_name: string
+}
+
+// ─── 受信者公開鍵検索 API ─────────────────────────────────────
+
+/** GET /api/v1/transfer/recipient-key?email=... レスポンス */
+export interface RecipientKeyResponse {
+  email: string
+  hasKyberKey: boolean
+  publicKeyKyberB64?: string
 }
 
 // ─── 管理者 API ───────────────────────────────────────────────
@@ -258,15 +287,6 @@ export interface AuditLogsResponse {
   limit: number
 }
 
-// ─── 受信者公開鍵検索 API ─────────────────────────────────────
-
-/** GET /api/v1/transfer/recipient-key?email=... レスポンス */
-export interface RecipientKeyResponse {
-  email: string
-  hasKyberKey: boolean
-  publicKeyKyberB64?: string
-}
-
 // ─── フロントエンド内部型 ──────────────────────────────────────
 
 /** 送信フロー ステップ */
@@ -286,6 +306,6 @@ export interface SendFormState {
 
 /** Kyber 鍵ペア（ブラウザ内のみ — サーバには送らない） */
 export interface KyberKeypair {
-  publicKeyB64: string    // Base64エンコード公開鍵（登録時APIに送信）
+  publicKeyB64: string      // Base64エンコード公開鍵（登録時APIに送信）
   secretKeyRaw: Uint8Array  // IndexedDB保存用秘密鍵（絶対にサーバに送らない）
 }

@@ -150,7 +150,7 @@ export async function storeEncryptedKey(
   await apiClient
     .post(`transfer/${sessionId}/key`, {
       json: {
-        encrypted_key_b64: encKeyB64,
+        enc_key_b64:   encKeyB64,
         cloud_file_id: cloudFileId,
       },
     })
@@ -223,12 +223,13 @@ export async function executeSendFlow(
   // Step 1: セッション開始
   onStageChange?.('initiating')
   const initiated = await initiateTransfer({
-    recipient_email:     opts.recipientEmail,
-    cloud_type:          opts.cloudProvider as 'box' | 'gdrive' | 'onedrive' | 'dropbox',
-    file_size_bytes:     opts.file.size,
-    file_hash_sha3:      opts.fileHashSha3,
-    expires_in_seconds:  opts.expiresInSeconds,
-    max_downloads:       opts.maxDownloads,
+    recipient_email:      opts.recipientEmail,
+    file_hash_sha3:       opts.fileHashSha3,
+    file_size_bytes:      opts.file.size,
+    encrypted_filename:   opts.file.name,
+    cloud_type:           opts.cloudProvider as 'box' | 'gdrive' | 'onedrive' | 'dropbox' | 'server',
+    expires_in_hours:     Math.round(opts.expiresInSeconds / 3600),
+    max_downloads:        opts.maxDownloads,
   })
 
   // Step 2: 暗号化ファイルアップロード
@@ -256,8 +257,8 @@ export async function executeSendFlow(
 
   return {
     shareUrl:  finalized.share_url,
-    urlToken:  finalized.url_token,
-    expiresAt: finalized.expires_at,
     sessionId: initiated.session_id,
+    expiresAt: initiated.expires_at,   // initiate レスポンスから取得
+    urlToken:  initiated.url_token,
   }
 }

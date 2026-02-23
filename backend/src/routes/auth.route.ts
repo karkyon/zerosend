@@ -19,6 +19,7 @@ import { login, verifyTotp } from '../services/auth.service.js'
 import { register }          from '../services/register.service.js'
 import { loginSchema, verifyTotpSchema } from '../validators/auth.validator.js'
 import { registerSchema }    from '../validators/register.validator.js'
+import { loginRateLimitMiddleware } from '../middlewares/rateLimit.middleware.js'
 import { BadRequestError }   from '../types/errors.js'
 import type { AppEnv }       from '../types/index.js'
 
@@ -53,7 +54,7 @@ authRoute.post('/register', async (c) => {
 
 // ─── POST /api/v1/auth/login ─────────────────────────────────────────────────
 
-authRoute.post('/login', async (c) => {
+authRoute.post('/login', loginRateLimitMiddleware, async (c) => {
   const raw = await c.req.json().catch(() => null)
   const result = loginSchema.safeParse(raw)
 

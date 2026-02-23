@@ -18,6 +18,7 @@ import {
   AppError, UnauthorizedError, AuthLockedError, AuthFailedError,
   NotFoundError, GoneError, ConflictError, BadRequestError,
   ForbiddenError, EmailFailedError,
+  TooManyRequestsError,
 } from '../types/errors.js'
 import { logger } from '../utils/logger.js'
 
@@ -52,7 +53,10 @@ export const errorHandler: ErrorHandler = (err, c) => {
     return c.json({ type: '/errors/bad-request',  title: err.message, status: 400, instance }, 400)
   }
   if (err instanceof ConflictError) {
-    return c.json({ type: '/errors/conflict',     title: err.message, status: 409, instance }, 409)
+    return c.json({ type: '/errors/conflict', title: err.message, status: 409, instance }, 409)
+  }
+  if (err instanceof TooManyRequestsError) {
+    return c.json({ type: '/errors/rate-limited', title: err.message, status: 429, instance }, 429)
   }
   if (err instanceof EmailFailedError) {
     return c.json({ type: '/errors/email-failed', title: err.message, status: 424, instance }, 424)
